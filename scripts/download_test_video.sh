@@ -19,8 +19,8 @@ fi
 
 echo "=== Downloading test video ==="
 
-# Short public domain walking video from the AlphaPose demo resources
-VIDEO_URL="https://github.com/MVIG-SJTU/AlphaPose/raw/master/docs/2.mp4"
+# Sign language video used as test input in openpose-singularity-uzh
+VIDEO_URL="https://www.sgb-fss.ch/signsuisse/fileadmin/signsuisse_ressources/videos/262C81F5-FB9D-759D-08E1CB201ADEB239.mp4"
 
 if command -v wget &>/dev/null; then
     wget -O "$OUTPUT" "$VIDEO_URL"
