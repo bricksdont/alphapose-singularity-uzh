@@ -86,13 +86,9 @@ def main():
         print("Install dependencies: bash scripts/setup_venv.sh", file=sys.stderr)
         sys.exit(1)
 
-    with open(input_path, "r") as f:
-        import json
-        data = json.load(f)
-
     print("Converting to pose format...")
 
-    pose = load_alphapose_wholebody_from_json(data, fps=fps)
+    pose = load_alphapose_wholebody_from_json(str(input_path), fps=fps)
 
     print(f"Writing .pose file: {output_path}")
 
