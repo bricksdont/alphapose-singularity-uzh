@@ -52,14 +52,13 @@ def main():
 
     try:
         from pose_format import Pose
-        from pose_format.utils.reader import BufferReader
     except ImportError as e:
         print(f"ERROR: Could not import pose_format: {e}", file=sys.stderr)
         print("Install dependencies: bash scripts/setup_venv.sh", file=sys.stderr)
         sys.exit(1)
 
     with open(input_path, "rb") as f:
-        pose = Pose.read(f.read(), BufferReader)
+        pose = Pose.read(f.read())
 
     print(f"Pose loaded: {pose.body.data.shape}")
 
