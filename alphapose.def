@@ -42,6 +42,10 @@ From: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
     export PATH=/usr/local/cuda/bin:$PATH
     export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 
+    # Explicitly set CUDA arch list — required when building without a GPU
+    # (torch cannot auto-detect architectures at build time in a container)
+    export TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0 7.5 8.0 8.6"
+
     # Build AlphaPose
     cd /opt/alphapose && python setup.py build develop
 
