@@ -50,7 +50,7 @@ bash scripts/test_gpu.sh
 bash scripts/setup_venv.sh
 ```
 
-Installs `gdown` (needed for model download) and the post-processing dependencies.
+Installs `gdown` (needed for model download) and the post-processing (Step 7) dependencies.
 
 ### 4. Download model weights
 
