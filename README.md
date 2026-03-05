@@ -36,6 +36,8 @@ On a SLURM cluster, submit as a job instead:
 bash scripts/slurm_build_container.sh
 ```
 
+> **Tip:** If the build fails repeatedly, temporary files from previous attempts may have exhausted disk space in `/tmp`. Check with `du -sh /tmp/build-temp-*` and remove any leftover directories before retrying.
+
 ### 2. Test GPU access
 
 ```bash
@@ -88,44 +90,6 @@ bash scripts/visualize_pose.sh \
     -i data/output/test.pose \
     -o data/output/test_viz.mp4 \
     --video data/input/test.mp4
-```
-
----
-
-## Directory Structure
-
-```
-alphapose-singularity-uzh/
-├── alphapose.def          # Singularity definition file
-├── requirements.txt       # Python deps for post-processing venv
-├── README.md
-├── CLAUDE.md              # Notes for Claude
-├── .gitignore
-├── scripts/
-│   ├── build_container.sh
-│   ├── push_to_ghcr.sh
-│   ├── download_models.sh
-│   ├── test_gpu.sh
-│   ├── download_test_video.sh
-│   ├── run_alphapose.sh
-│   ├── convert_to_pose.sh
-│   ├── convert_to_pose.py
-│   ├── visualize_pose.sh
-│   ├── visualize_pose.py
-│   ├── setup_venv.sh
-│   ├── batch_to_pose.sh
-│   ├── slurm_submit.sh
-│   ├── slurm_job.sh
-│   └── slurm_build_container.sh
-└── data/                  # gitignored
-    ├── input/             # input videos
-    ├── output/            # keypoints JSON, .pose files, videos
-    └── models/            # downloaded weights
-        ├── yolov3-spp.weights
-        └── pretrained_models/
-            ├── multi_domain_fast50_dcn_combined_256x192.pth
-            ├── multi_domain_fast50_regression_256x192.pth
-            └── wholebody133_dcn_combined.pth
 ```
 
 ---
@@ -245,6 +209,44 @@ Load the Singularity/Apptainer module: `module load singularity` or `module load
 
 **Out of memory during inference:**
 Reduce batch size or use a smaller input resolution. Edit the config YAML inside the container at `/opt/alphapose/configs/`.
+
+---
+
+## Directory Structure
+
+```
+alphapose-singularity-uzh/
+├── alphapose.def          # Singularity definition file
+├── requirements.txt       # Python deps for post-processing venv
+├── README.md
+├── CLAUDE.md              # Notes for Claude
+├── .gitignore
+├── scripts/
+│   ├── build_container.sh
+│   ├── push_to_ghcr.sh
+│   ├── download_models.sh
+│   ├── test_gpu.sh
+│   ├── download_test_video.sh
+│   ├── run_alphapose.sh
+│   ├── convert_to_pose.sh
+│   ├── convert_to_pose.py
+│   ├── visualize_pose.sh
+│   ├── visualize_pose.py
+│   ├── setup_venv.sh
+│   ├── batch_to_pose.sh
+│   ├── slurm_submit.sh
+│   ├── slurm_job.sh
+│   └── slurm_build_container.sh
+└── data/                  # gitignored
+    ├── input/             # input videos
+    ├── output/            # keypoints JSON, .pose files, videos
+    └── models/            # downloaded weights
+        ├── yolov3-spp.weights
+        └── pretrained_models/
+            ├── multi_domain_fast50_dcn_combined_256x192.pth
+            ├── multi_domain_fast50_regression_256x192.pth
+            └── wholebody133_dcn_combined.pth
+```
 
 ---
 
