@@ -103,6 +103,7 @@ alphapose-singularity-uzh/
 ├── .gitignore
 ├── scripts/
 │   ├── build_container.sh
+│   ├── push_to_ghcr.sh
 │   ├── download_models.sh
 │   ├── test_gpu.sh
 │   ├── download_test_video.sh
@@ -189,6 +190,45 @@ Convert:
 ```python
 from pose_format.utils.alphapose import load_alphapose_wholebody_from_json
 ```
+
+---
+
+## Pushing the Container to GHCR
+
+Once built, the `alphapose.sif` image can be pushed to the [GitHub Container Registry (GHCR)](https://ghcr.io) so others can pull it directly without building from source.
+
+### Prerequisites
+
+Create a GitHub Personal Access Token (PAT) with the `write:packages` scope:
+[https://github.com/settings/tokens](https://github.com/settings/tokens)
+
+Export it:
+```bash
+export GITHUB_TOKEN=<your_token>
+```
+
+### Push
+
+```bash
+bash scripts/push_to_ghcr.sh
+```
+
+With options:
+```bash
+bash scripts/push_to_ghcr.sh --tag v1.0 --user bricksdont --repo alphapose-singularity-uzh
+```
+
+### Pull (for end users)
+
+```bash
+singularity pull oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
+```
+
+### Making the package public
+
+By default GHCR packages are private. To allow public access, go to:
+
+> GitHub → Your profile → Packages → `alphapose` → Package Settings → Change visibility → Public
 
 ---
 
