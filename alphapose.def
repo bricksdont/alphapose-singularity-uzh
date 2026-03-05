@@ -46,6 +46,11 @@ From: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
     # (torch cannot auto-detect architectures at build time in a container)
     export TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0 7.5 8.0 8.6"
 
+    # Pre-install matplotlib and contourpy via pip to avoid easy_install
+    # trying to fetch contourpy>=1.0.1 from source — newer contourpy dropped
+    # setup.py and easy_install cannot handle pyproject.toml-only packages.
+    pip install --no-cache-dir matplotlib contourpy
+
     # Build AlphaPose
     cd /opt/alphapose && python setup.py build develop
 
