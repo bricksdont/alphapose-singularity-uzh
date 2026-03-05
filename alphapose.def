@@ -1,0 +1,56 @@
+Bootstrap: docker
+From: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
+
+%labels
+    Author UZH
+    Description AlphaPose pose estimation container
+
+%post
+    # Install system dependencies
+    apt-get update && apt-get install -y \
+        git \
+        libyaml-dev \
+        wget \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Install Python dependencies
+    pip install --no-cache-dir \
+        cython \
+        "numpy==1.26.4" \
+        "opencv-python==4.11.0.86" \
+        scipy \
+        tqdm \
+        munkres \
+        easydict \
+        halpecocotools \
+        pyyaml \
+        tensorboardX \
+        gdown
+
+    # Clone AlphaPose
+    git clone https://github.com/MVIG-SJTU/AlphaPose.git /opt/alphapose
+
+    # Checkout known-working commit (verified by GerrySant install script)
+    git -C /opt/alphapose checkout c60106d19afb443e964df6f06ed1842962f5f1f7
+
+    # Set CUDA paths for build
+    export PATH=/usr/local/cuda/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+
+    # Build AlphaPose
+    cd /opt/alphapose && python setup.py build develop
+
+    # Create directories for model bind mounts
+    mkdir -p /opt/alphapose/detector/yolo/data
+    mkdir -p /opt/alphapose/pretrained_models
+
+%environment
+    export PATH=/usr/local/cuda/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+    export PYTHONPATH=/opt/alphapose
+
+%runscript
+    cd /opt/alphapose
+    exec python scripts/demo_inference.py "$@"

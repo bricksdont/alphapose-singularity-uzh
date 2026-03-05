@@ -1,0 +1,46 @@
+# Singularity image
+*.sif
+
+# Data directories (videos, outputs, model weights)
+data/*
+!data/input/
+!data/output/
+!data/models/
+data/input/*
+!data/input/.gitkeep
+data/output/*
+!data/output/.gitkeep
+data/models/*
+!data/models/pretrained_models/
+data/models/pretrained_models/*
+!data/models/pretrained_models/.gitkeep
+
+# Python virtual environment
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# SLURM logs and chunk lists
+logs/
+data/chunks/
+
+# OS
+.DS_Store
+Thumbs.db
