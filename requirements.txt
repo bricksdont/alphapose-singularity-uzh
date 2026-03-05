@@ -1,5 +1,2 @@
-git+https://github.com/GerrySant/pose.git@1ed292b03ff627fa9e2594b944c853ec7172aa74#egg=pose-format&subdirectory=src/python
-numpy
-opencv-python
-tqdm
+git+https://github.com/GerrySant/pose.git@1ed292b03ff627fa9e2594b944c853ec7172aa74[dev]
 gdown
