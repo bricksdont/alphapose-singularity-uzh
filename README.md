@@ -44,15 +44,23 @@ bash scripts/slurm_build_container.sh
 bash scripts/test_gpu.sh
 ```
 
-### 3. Download model weights
+### 3. Set up venv
+
+```bash
+bash scripts/setup_venv.sh
+```
+
+Installs `gdown` (needed for model download) and the post-processing dependencies.
+
+### 4. Download model weights
 
 ```bash
 bash scripts/download_models.sh
 ```
 
-Downloads YOLO detector and pose models to `data/models/`.
+Downloads YOLO detector and pose models to `data/models/`. Requires `gdown` from the venv.
 
-### 4. Get a test video
+### 5. Get a test video
 
 ```bash
 bash scripts/download_test_video.sh
@@ -60,19 +68,13 @@ bash scripts/download_test_video.sh
 
 Downloads a short sample video to `data/input/test.mp4`.
 
-### 5. Run AlphaPose
+### 6. Run AlphaPose
 
 ```bash
 bash scripts/run_alphapose.sh --video data/input/test.mp4
 ```
 
 Output: `data/output/keypoints/`
-
-### 6. Set up post-processing venv
-
-```bash
-bash scripts/setup_venv.sh
-```
 
 ### 7. Convert to .pose format
 

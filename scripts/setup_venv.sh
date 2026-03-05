@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Create Python virtual environment and install post-processing dependencies.
+# Create Python virtual environment and install dependencies.
+# Provides gdown (for model download) and post-processing tools (pose-format).
 
 set -euo pipefail
 
