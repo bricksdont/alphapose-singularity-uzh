@@ -140,6 +140,8 @@ else
 fi
 
 $SIF_CMD \
+    --env "LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLdispatch.so.0:/usr/lib/x86_64-linux-gnu/libGLX.so.0:/usr/lib/x86_64-linux-gnu/libGL.so.1" \
+    --bind "$SCRIPT_DIR/sitecustomize.py":/opt/conda/lib/python3.10/site-packages/sitecustomize.py \
     --bind "$VIDEO_DIR":/input \
     --bind "$OUTDIR_ABS":/output \
     --bind "$YOLO_WEIGHTS":/opt/alphapose/detector/yolo/data/yolov3-spp.weights \
