@@ -48,88 +48,41 @@ def main():
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    print(f"Loading .pose file: {input_path}")
-
     try:
+        import cv2
         from pose_format import Pose
+        from pose_format.pose_visualizer import PoseVisualizer
     except ImportError as e:
-        print(f"ERROR: Could not import pose_format: {e}", file=sys.stderr)
+        print(f"ERROR: Could not import required library: {e}", file=sys.stderr)
         print("Install dependencies: bash scripts/setup_venv.sh", file=sys.stderr)
         sys.exit(1)
 
+    print(f"Loading .pose file: {input_path}")
     with open(input_path, "rb") as f:
         pose = Pose.read(f.read())
 
-    print(f"Pose loaded: {pose.body.data.shape}")
-
-    # Load background video frames if provided
-    background = None
+    # The pose-format library truncates FPS to int, but the visualizer
+    # requires an exact match with the video FPS. Patch to match the video.
     if args.video:
         video_path = Path(args.video)
-        if video_path.exists():
-            try:
-                import cv2
-                cap = cv2.VideoCapture(str(video_path))
-                frames = []
-                while True:
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
-                    frames.append(frame)
-                cap.release()
-                background = frames
-                print(f"Background video loaded: {len(frames)} frames")
-            except ImportError:
-                print("WARNING: OpenCV not available, rendering without background.", file=sys.stderr)
-        else:
+        if not video_path.exists():
             print(f"WARNING: Video not found: {video_path}", file=sys.stderr)
+            args.video = None
+        else:
+            cap = cv2.VideoCapture(str(video_path))
+            video_fps = cap.get(cv2.CAP_PROP_FPS)
+            cap.release()
+            pose.body.fps = video_fps
 
     print("Rendering visualization...")
+    v = PoseVisualizer(pose)
 
-    try:
-        from pose_format.utils.generic import pose_normalization_info, correct_wrists, reduce_holistic
-        import numpy as np
-        import cv2
+    if args.video:
+        frames = v.draw_on_video(args.video)
+    else:
+        frames = v.draw()
 
-        fps = pose.body.fps
-        num_frames = pose.body.data.shape[0]
-        height = pose.header.dimensions.height
-        width = pose.header.dimensions.width
-
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        writer = cv2.VideoWriter(str(output_path), fourcc, fps, (width, height))
-
-        for frame_idx in range(num_frames):
-            # Start from background or blank frame
-            if background and frame_idx < len(background):
-                frame = background[frame_idx].copy()
-                frame = cv2.resize(frame, (width, height))
-            else:
-                frame = np.zeros((height, width, 3), dtype=np.uint8)
-
-            # Draw keypoints
-            frame_data = pose.body.data[frame_idx]  # (people, points, dims)
-            frame_conf = pose.body.confidence[frame_idx]  # (people, points)
-
-            for person_idx in range(frame_data.shape[0]):
-                for pt_idx in range(frame_data.shape[1]):
-                    conf = float(frame_conf[person_idx, pt_idx])
-                    if conf < 0.1:
-                        continue
-                    x = int(frame_data[person_idx, pt_idx, 0])
-                    y = int(frame_data[person_idx, pt_idx, 1])
-                    if 0 <= x < width and 0 <= y < height:
-                        cv2.circle(frame, (x, y), 3, (0, 255, 0), -1)
-
-            writer.write(frame)
-
-        writer.release()
-
-    except Exception as e:
-        print(f"ERROR during rendering: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+    v.save_video(str(output_path), frames)
 
     print(f"Done. Output: {output_path}")
 
