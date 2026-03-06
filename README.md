@@ -198,19 +198,30 @@ By default GHCR packages are private. To allow public access, go to:
 
 ---
 
-## Troubleshooting
+## Inference modes and speed
 
-**Build fails with CUDA errors:**
-Check that the base Docker image `pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel` is compatible with your cluster's CUDA driver version (requires driver ≥ 530).
+There are two ways to run AlphaPose inference:
 
-**`gdown` rate-limit / download fails:**
-Download models manually from Google Drive and place them in `data/models/` following the paths in `CLAUDE.md`.
+### `run_alphapose.sh` — demo_inference.py mode
 
-**`singularity: command not found`:**
-Load the Singularity/Apptainer module: `module load singularity` or `module load apptainer`.
+Calls AlphaPose's built-in `demo_inference.py`. Supports one video per invocation; the model is loaded fresh each time. Can optionally save an AlphaPose-rendered annotated video (`--save-video`).
 
-**Out of memory during inference:**
-Reduce batch size or use a smaller input resolution. Edit the config YAML inside the container at `/opt/alphapose/configs/`.
+### `run_alphapose_api.sh` — API mode (recommended for batches)
+
+Calls `scripts/alphapose_estimation.py`, which uses the AlphaPose Python API directly with a synchronous writer, bypassing `demo_inference.py`'s async DataWriter queue. The model is loaded once and all videos are processed in a single loop. Accepts a single video file or a directory of videos. Does not produce an annotated video — JSON output only.
+
+### Speed comparison
+
+Benchmarked on 3 × 133-frame videos (640×480, ~5 s each) on a single Tesla T4:
+
+| Approach | Total time | Per video | Model loads |
+|---|---|---|---|
+| `run_alphapose.sh` (×3) | ~79 s | ~26 s each | 3 |
+| `run_alphapose_api.sh` (directory) | ~35 s | ~24 s (first), ~7 s (subsequent) | 1 |
+
+The API mode is **~2.3× faster** for batch processing. The first video still pays the full startup cost (~17 s for model load); subsequent videos cost only the inference time (~7 s each). The speed advantage grows with the number of videos.
+
+`demo_inference.py` has no native batch/directory mode for videos, so model-load overhead cannot be avoided when using it for multiple videos.
 
 ---
 
@@ -230,6 +241,8 @@ alphapose-singularity-uzh/
 │   ├── test_gpu.sh
 │   ├── download_test_video.sh
 │   ├── run_alphapose.sh
+│   ├── run_alphapose_api.sh
+│   ├── alphapose_estimation.py
 │   ├── convert_to_pose.sh
 │   ├── convert_to_pose.py
 │   ├── visualize_pose.sh
