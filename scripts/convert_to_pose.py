@@ -68,6 +68,8 @@ def main():
 
     # Get video metadata if provided
     fps = None
+    width = None
+    height = None
     if args.original_video:
         video_path = Path(args.original_video)
         if video_path.exists():
@@ -88,7 +90,15 @@ def main():
 
     print("Converting to pose format...")
 
-    pose = load_alphapose_wholebody_from_json(str(input_path), fps=fps)
+    kwargs = {}
+    if fps is not None:
+        kwargs["fps"] = fps
+    if width is not None:
+        kwargs["width"] = width
+    if height is not None:
+        kwargs["height"] = height
+
+    pose = load_alphapose_wholebody_from_json(str(input_path), **kwargs)
 
     print(f"Writing .pose file: {output_path}")
 
