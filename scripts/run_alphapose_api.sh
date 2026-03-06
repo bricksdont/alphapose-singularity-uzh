@@ -70,8 +70,8 @@ if [ -z "$VIDEO" ]; then
     exit 1
 fi
 
-if [ ! -f "$VIDEO" ]; then
-    echo "ERROR: Video file not found: $VIDEO"
+if [ ! -f "$VIDEO" ] && [ ! -d "$VIDEO" ]; then
+    echo "ERROR: Video file or directory not found: $VIDEO"
     exit 1
 fi
 
@@ -121,8 +121,13 @@ fi
 
 # Resolve absolute paths for bind mounts
 VIDEO_ABS="$(realpath "$VIDEO")"
-VIDEO_DIR="$(dirname "$VIDEO_ABS")"
-VIDEO_NAME="$(basename "$VIDEO_ABS")"
+if [ -d "$VIDEO_ABS" ]; then
+    VIDEO_DIR="$VIDEO_ABS"
+    VIDEO_NAME="."
+else
+    VIDEO_DIR="$(dirname "$VIDEO_ABS")"
+    VIDEO_NAME="$(basename "$VIDEO_ABS")"
+fi
 OUTDIR_ABS="$(realpath "$OUTDIR")"
 
 echo "=== Running AlphaPose (API mode) ==="
