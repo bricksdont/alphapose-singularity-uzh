@@ -8,6 +8,7 @@
 #   --video <path>       Path to input video (required)
 #   --keypoints 136|133  Number of keypoints (default: 136)
 #   --track              Enable pose tracking (--pose_track)
+#   --save-video         Save annotated output video (default: off)
 #   --outdir <path>      Output directory (default: data/output/keypoints)
 
 set -euo pipefail
@@ -20,6 +21,7 @@ SIF="$REPO_DIR/alphapose.sif"
 VIDEO=""
 KEYPOINTS="136"
 TRACK=0
+SAVE_VIDEO=0
 OUTDIR=""
 
 # Parse arguments
@@ -37,12 +39,16 @@ while [[ $# -gt 0 ]]; do
             TRACK=1
             shift
             ;;
+        --save-video)
+            SAVE_VIDEO=1
+            shift
+            ;;
         --outdir)
             OUTDIR="$2"
             shift 2
             ;;
         -h|--help)
-            echo "Usage: bash scripts/run_alphapose.sh --video <path> [--keypoints 136|133] [--track] [--outdir <path>]"
+            echo "Usage: bash scripts/run_alphapose.sh --video <path> [--keypoints 136|133] [--track] [--save-video] [--outdir <path>]"
             exit 0
             ;;
         *)
@@ -128,6 +134,9 @@ EXTRA_ARGS=""
 if [ "$TRACK" -eq 1 ]; then
     EXTRA_ARGS="$EXTRA_ARGS --pose_track"
 fi
+if [ "$SAVE_VIDEO" -eq 1 ]; then
+    EXTRA_ARGS="$EXTRA_ARGS --save_video"
+fi
 
 # Try apptainer first, fall back to singularity
 if command -v apptainer &>/dev/null; then
@@ -152,7 +161,6 @@ $SIF_CMD \
     --video /input/"$VIDEO_NAME" \
     --outdir /output \
     --format coco \
-    --save_video \
     --gpus 0 \
     $EXTRA_ARGS
 
