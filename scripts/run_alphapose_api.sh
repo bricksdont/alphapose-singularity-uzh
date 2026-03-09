@@ -3,7 +3,7 @@
 #
 # This is an alternative to run_alphapose.sh that bypasses demo_inference.py's
 # async DataWriter queue and produces JSON output only (no annotated video).
-# Use this when smoother, more deterministic keypoint output is needed.
+# It loads the model only once, saving time for large batches.
 #
 # Usage:
 #   bash scripts/run_alphapose_api.sh --video <path/to/video.mp4> [options]
