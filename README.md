@@ -1,6 +1,6 @@
 # alphapose-singularity-uzh
 
-Singularity/Apptainer container pipeline for running [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose) whole-body pose estimation on videos at UZH.
+Singularity/Apptainer container pipeline for running [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose) whole-body pose estimation. Dedicated code for running on the UZH SLURM cluster.
 
 ## Features
 
