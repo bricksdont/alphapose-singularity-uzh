@@ -156,11 +156,10 @@ Submit parallel SLURM jobs for large-scale batch processing:
 Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [options]
 
 Options:
-  --chunks N           Number of parallel jobs (default: 4)
+  --chunks N           Number of parallel jobs (default: 1)
   --keypoints 136|133  Keypoint format (default: 136)
-  --track              Enable pose tracking
   --partition <name>   SLURM partition (default: gpu)
-  --time <HH:MM:SS>    Time limit per job (default: 04:00:00)
+  --time <HH:MM:SS>    Time limit per job (default: 24:00:00)
 ```
 
 ---

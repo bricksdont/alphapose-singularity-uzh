@@ -9,22 +9,20 @@
 #   bash scripts/slurm_submit.sh <input_dir> <output_dir> [options]
 #
 # Options:
-#   --chunks N           Number of parallel jobs (default: 4)
+#   --chunks N           Number of parallel jobs (default: 1)
 #   --keypoints 136|133  Keypoints (default: 136)
-#   --track              Enable pose tracking
 #   --partition <name>   SLURM partition (default: gpu)
-#   --time <HH:MM:SS>    Time limit per job (default: 04:00:00)
+#   --time <HH:MM:SS>    Time limit per job (default: 24:00:00)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Defaults
-NUM_CHUNKS=4
+NUM_CHUNKS=1
 KEYPOINTS="136"
-TRACK_FLAG=""
 PARTITION="gpu"
-TIME_LIMIT="04:00:00"
+TIME_LIMIT="24:00:00"
 
 # Parse args
 POSITIONAL=()
@@ -32,11 +30,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --chunks)     NUM_CHUNKS="$2"; shift 2 ;;
         --keypoints)  KEYPOINTS="$2"; shift 2 ;;
-        --track)      TRACK_FLAG="--track"; shift ;;
         --partition)  PARTITION="$2"; shift 2 ;;
         --time)       TIME_LIMIT="$2"; shift 2 ;;
         -h|--help)
-            echo "Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [--chunks N] [--keypoints 136|133] [--track] [--partition <name>] [--time <HH:MM:SS>]"
+            echo "Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [--chunks N] [--keypoints 136|133] [--partition <name>] [--time <HH:MM:SS>]"
             exit 0
             ;;
         *)
@@ -129,7 +126,7 @@ for i in $(seq 0 $((NUM_CHUNKS - 1))); do
         --output="$LOG_DIR/job_%j.out" \
         --error="$LOG_DIR/job_%j.err" \
         --job-name="alphapose_$i" \
-        "$SCRIPT_DIR/slurm_job.sh" "$CHUNK_DIR" "$OUTPUT_DIR" "$KEYPOINTS" "$TRACK_FLAG" \
+        "$SCRIPT_DIR/slurm_job.sh" "$CHUNK_DIR" "$OUTPUT_DIR" "$KEYPOINTS" \
         | grep -o '[0-9]*')
     JOB_IDS+=("$JOB_ID")
     echo "Submitted chunk $i -> SLURM job $JOB_ID"
