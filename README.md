@@ -2,8 +2,6 @@
 
 Singularity/Apptainer container pipeline for running [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose) whole-body pose estimation on videos at UZH.
 
-Mirrors the structure and conventions of [openpose-singularity-uzh](https://github.com/bricksdont/openpose-singularity-uzh).
-
 ## Features
 
 - **136 keypoints** (HALPE_136, default) or **133 keypoints** (COCO WholeBody)
