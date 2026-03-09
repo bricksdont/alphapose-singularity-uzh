@@ -25,27 +25,18 @@ Mirrors the structure and conventions of [openpose-singularity-uzh](https://gith
 
 ### 1. Build the container
 
-The build is split into two layers:
-
-**Base image** (`alphapose-base.sif`) — compiles AlphaPose from source. Takes 30–60 minutes. Only needs to be done once; the result is pushed to GHCR for reuse.
-
-```bash
-bash scripts/build_base_container.sh
-bash scripts/push_to_ghcr.sh
-```
-
-> **Tip:** If the build fails repeatedly, temporary files from previous attempts may have exhausted disk space in `/tmp`. Check with `du -sh /tmp/build-temp-*` and remove any leftover directories before retrying.
-
-**Derived image** (`alphapose.sif`) — pulls the base from GHCR and adds any extra Python dependencies defined in `alphapose.def`. Fast (~2 minutes). Rebuild this whenever you need different dependencies.
+> **Note:** Building compiles AlphaPose from source and takes 30–60 minutes.
 
 ```bash
 bash scripts/build_container.sh
 ```
 
-On a SLURM cluster, submit the derived build as a job:
+On a SLURM cluster, submit as a job instead:
 ```bash
 bash scripts/slurm_build_container.sh
 ```
+
+> **Tip:** If the build fails repeatedly, temporary files from previous attempts may have exhausted disk space in `/tmp`. Check with `du -sh /tmp/build-temp-*` and remove any leftover directories before retrying.
 
 ### 2. Test GPU access
 
@@ -160,7 +151,7 @@ Post-processing uses the [GerrySant/pose](https://github.com/GerrySant/pose/tree
 
 ## Pushing the Container to GHCR
 
-Once built, the `alphapose-base.sif` image can be pushed to the [GitHub Container Registry (GHCR)](https://ghcr.io) so others can use it as a build base without recompiling AlphaPose from source.
+Once built, the `alphapose.sif` image can be pushed to the [GitHub Container Registry (GHCR)](https://ghcr.io) so others can pull it directly without building from source.
 
 ### Prerequisites
 
@@ -183,16 +174,10 @@ With options:
 bash scripts/push_to_ghcr.sh --tag v1.0 --user bricksdont --repo alphapose-singularity-uzh
 ```
 
-### Pull / use as build base
+### Pull (for end users)
 
-To build `alphapose.sif` using the pre-built base (fast, no compilation):
 ```bash
-bash scripts/build_container.sh
-```
-
-To pull the base image directly:
-```bash
-singularity pull oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose-base:latest
+singularity pull oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
 ```
 
 ### Making the package public
@@ -234,14 +219,12 @@ The API mode is **~2.3× faster** for batch processing. The first video still pa
 
 ```
 alphapose-singularity-uzh/
-├── alphapose-base.def     # Base image definition (slow build, done once)
-├── alphapose.def          # Derived image definition (fast build, add deps here)
+├── alphapose.def          # Singularity definition file
 ├── requirements.txt       # Python deps for post-processing venv
 ├── README.md
 ├── CLAUDE.md              # Notes for Claude
 ├── .gitignore
 ├── scripts/
-│   ├── build_base_container.sh
 │   ├── build_container.sh
 │   ├── push_to_ghcr.sh
 │   ├── download_models.sh

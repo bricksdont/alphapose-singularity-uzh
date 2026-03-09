@@ -1,19 +1,7 @@
 #!/usr/bin/env bash
-# Build the AlphaPose Singularity container from the base image on GHCR.
-#
-# This is fast (~2 minutes) — it pulls the pre-built alphapose-base image
-# from GHCR and adds any extra Python dependencies defined in alphapose.def.
-#
-# Prerequisites:
-#   - alphapose-base image must be available on GHCR (pushed via push_to_ghcr.sh)
-#   - Apptainer ≥ 1.1 or Singularity with ORAS support
-#
-# If the base image is not on GHCR yet, build it first:
-#   bash scripts/build_base_container.sh
-#   bash scripts/push_to_ghcr.sh
-#
-# Usage:
-#   bash scripts/build_container.sh
+# Build the AlphaPose Singularity container from source.
+# This is NOT a simple pull — it compiles AlphaPose inside the container.
+# Expected build time: 30–60 minutes.
 
 set -euo pipefail
 
@@ -36,6 +24,28 @@ if [ -f "$SIF" ]; then
     exit 0
 fi
 
+echo "WARNING: Building AlphaPose from source takes 30–60 minutes."
+echo "The build requires internet access and ~10 GB of disk space."
+echo ""
+
+# Check available disk space — build needs ~35 GB free (uncompressed sandbox
+# can be 3-4x the final .sif size of ~9 GB)
+AVAIL_GB=$(df --output=avail -BG "$REPO_DIR" | tail -1 | tr -d 'G ')
+REQUIRED_GB=35
+if [ "$AVAIL_GB" -lt "$REQUIRED_GB" ]; then
+    echo "WARNING: Only ${AVAIL_GB} GB free on the filesystem containing $REPO_DIR."
+    echo "         The build needs at least ${REQUIRED_GB} GB. It may fail at the"
+    echo "         final squashfs step. Consider freeing space first."
+    echo "         Leftover /tmp/build-temp-* directories from previous failed"
+    echo "         builds are a common culprit:"
+    echo "           du -sh /tmp/build-temp-* 2>/dev/null"
+    echo "           rm -rf /tmp/build-temp-*"
+    echo ""
+else
+    echo "Disk space: ${AVAIL_GB} GB available (need ~${REQUIRED_GB} GB) — OK"
+    echo ""
+fi
+
 # Try apptainer first, fall back to singularity
 if command -v apptainer &>/dev/null; then
     BUILD_CMD="apptainer build"
@@ -48,7 +58,6 @@ fi
 
 echo "Using: $BUILD_CMD"
 echo "Output: $SIF"
-echo "Base:   oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose-base:latest"
 echo ""
 
 cd "$REPO_DIR"

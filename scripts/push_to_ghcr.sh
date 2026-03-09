@@ -18,13 +18,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-SIF="$REPO_DIR/alphapose-base.sif"
+SIF="$REPO_DIR/alphapose.sif"
 
 # Defaults
 TAG="latest"
 GITHUB_USER="bricksdont"
 REPO_NAME="alphapose-singularity-uzh"
-IMAGE_NAME="alphapose-base"
+IMAGE_NAME="alphapose"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -46,7 +46,7 @@ REGISTRY="oras://ghcr.io/${GITHUB_USER}/${REPO_NAME}/${IMAGE_NAME}:${TAG}"
 
 if [ ! -f "$SIF" ]; then
     echo "ERROR: Container not found: $SIF"
-    echo "Build it first: bash scripts/build_base_container.sh"
+    echo "Build it first: bash scripts/build_container.sh"
     exit 1
 fi
 
