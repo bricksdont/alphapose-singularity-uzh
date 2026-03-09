@@ -67,7 +67,7 @@ Installs `gdown` (needed for model download) and the post-processing (Step 7) de
 bash scripts/download_models.sh
 ```
 
-Downloads YOLO detector and pose models to `data/models/`. Requires `gdown` from the venv.
+Downloads YOLO detector and pose models to `data/pretrained_models/`. Requires `gdown` from the venv.
 
 ### 5. Get a test video
 
