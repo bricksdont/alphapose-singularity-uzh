@@ -13,7 +13,7 @@
 #   --keypoints 136|133  Number of keypoints (default: 136)
 #   --track              Enable pose tracking (--pose_track)
 #   --flip               Enable horizontal flip augmentation
-#   --outdir <path>      Output directory (default: data/output/keypoints_api)
+#   --outdir <path>      Output directory (required)
 
 set -euo pipefail
 
@@ -52,7 +52,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -h|--help)
-            echo "Usage: bash scripts/run_alphapose_api.sh --video <path> [--keypoints 136|133] [--track] [--flip] [--outdir <path>]"
+            echo "Usage: bash scripts/run_alphapose_api.sh --video <path|dir> --outdir <path> [--keypoints 136|133] [--track] [--flip]"
             exit 0
             ;;
         *)
@@ -81,9 +81,11 @@ if [ ! -f "$SIF" ]; then
     exit 1
 fi
 
-# Set output directory
+# Validate output directory
 if [ -z "$OUTDIR" ]; then
-    OUTDIR="$REPO_DIR/data/output/keypoints_api"
+    echo "ERROR: --outdir is required."
+    echo "Usage: bash scripts/run_alphapose_api.sh --video <path|dir> --outdir <path>"
+    exit 1
 fi
 mkdir -p "$OUTDIR"
 

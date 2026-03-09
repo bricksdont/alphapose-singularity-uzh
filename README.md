@@ -68,28 +68,26 @@ There are two scripts; both produce identical keypoint output (default scheme: 1
 **Option A — `run_alphapose.sh`** (single video only):
 
 ```bash
-bash scripts/run_alphapose.sh --video data/input/test.mp4
+bash scripts/run_alphapose.sh --video data/input/test.mp4 --outdir data/output/keypoints
 ```
 
 Optionally save AlphaPose's own skeleton-overlay video alongside the JSON:
 
 ```bash
-bash scripts/run_alphapose.sh --video data/input/test.mp4 --save-video
+bash scripts/run_alphapose.sh --video data/input/test.mp4 --outdir data/output/keypoints --save-video
 ```
 
 **Option B — `run_alphapose_api.sh`** (single video or directory):
 
 ```bash
 # single video
-bash scripts/run_alphapose_api.sh --video data/input/test.mp4
+bash scripts/run_alphapose_api.sh --video data/input/test.mp4 --outdir data/output/keypoints_api
 
 # directory of videos — loads the model once and processes all videos in a loop
-bash scripts/run_alphapose_api.sh --video data/input/
+bash scripts/run_alphapose_api.sh --video data/input/ --outdir data/output/keypoints_api
 ```
 
 Processing a directory is significantly faster than running Option A once per video; see the [Inference modes and speed](#inference-modes-and-speed) section for benchmarks.
-
-Output: `data/output/keypoints/` (Option A) or `data/output/keypoints_api/` (Option B)
 
 ### 7. Convert to .pose format
 
@@ -125,7 +123,7 @@ Options:
   --keypoints 136|133  Keypoint format (default: 136)
   --track              Enable pose tracking
   --save-video         Save AlphaPose-rendered annotated video (default: off)
-  --outdir <path>      Output directory (default: data/output/keypoints)
+  --outdir <path>      Output directory (required)
 ```
 
 ### `scripts/run_alphapose_api.sh`
@@ -134,14 +132,14 @@ Single video or directory of videos. Loads the model once and processes all vide
 significantly faster than `run_alphapose.sh` for batches. JSON output only (no annotated video).
 
 ```
-Usage: bash scripts/run_alphapose_api.sh --video <path|dir> [options]
+Usage: bash scripts/run_alphapose_api.sh --video <path|dir> --outdir <path> [options]
 
 Options:
   --video <path|dir>   Input video file or directory (required)
   --keypoints 136|133  Keypoint format (default: 136)
   --track              Enable pose tracking
   --flip               Enable horizontal flip augmentation
-  --outdir <path>      Output directory (default: data/output/keypoints_api)
+  --outdir <path>      Output directory (required)
 ```
 
 ### `scripts/slurm_submit.sh`

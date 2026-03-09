@@ -9,7 +9,7 @@
 #   --keypoints 136|133  Number of keypoints (default: 136)
 #   --track              Enable pose tracking (--pose_track)
 #   --save-video         Save annotated output video (default: off)
-#   --outdir <path>      Output directory (default: data/output/keypoints)
+#   --outdir <path>      Output directory (required)
 
 set -euo pipefail
 
@@ -48,7 +48,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -h|--help)
-            echo "Usage: bash scripts/run_alphapose.sh --video <path> [--keypoints 136|133] [--track] [--save-video] [--outdir <path>]"
+            echo "Usage: bash scripts/run_alphapose.sh --video <path> --outdir <path> [--keypoints 136|133] [--track] [--save-video]"
             exit 0
             ;;
         *)
@@ -77,9 +77,11 @@ if [ ! -f "$SIF" ]; then
     exit 1
 fi
 
-# Set output directory
+# Validate output directory
 if [ -z "$OUTDIR" ]; then
-    OUTDIR="$REPO_DIR/data/output/keypoints"
+    echo "ERROR: --outdir is required."
+    echo "Usage: bash scripts/run_alphapose.sh --video <path> --outdir <path>"
+    exit 1
 fi
 mkdir -p "$OUTDIR"
 
