@@ -158,7 +158,6 @@ Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [options]
 Options:
   --chunks N           Number of parallel jobs (default: 1)
   --keypoints 136|133  Keypoint format (default: 136)
-  --partition <name>   SLURM partition (default: gpu)
   --time <HH:MM:SS>    Time limit per job (default: 24:00:00)
 ```
 
