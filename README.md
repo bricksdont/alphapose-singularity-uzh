@@ -148,7 +148,7 @@ Options:
   --outdir <path>      Output directory (required)
 ```
 
-### `scripts/slurm_submit.sh` / `scripts/slurm_job.sh`
+### `scripts/slurm_submit.sh`
 
 Submit parallel SLURM jobs for large-scale batch processing:
 
