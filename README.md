@@ -148,17 +148,6 @@ Options:
   --outdir <path>      Output directory (required)
 ```
 
-### `scripts/slurm_submit.sh`
-
-Submit parallel SLURM jobs:
-
-```bash
-bash scripts/slurm_submit.sh data/input data/output \
-    --chunk-size 5 \
-    --partition gpu \
-    --time 04:00:00
-```
-
 ---
 
 ## Models
