@@ -42,7 +42,7 @@ bash scripts/push_to_ghcr.sh
 bash scripts/build_container.sh
 ```
 
-On a SLURM cluster, submit the base build as a job:
+On a SLURM cluster, submit the derived build as a job:
 ```bash
 bash scripts/slurm_build_container.sh
 ```
@@ -152,19 +152,9 @@ The default 136-kpt model (Multi-domain DCN Combined) is trained on both HALPE a
 
 ---
 
-## Post-Processing
+## Converting to binary `.pose` files (post-processing)
 
 Post-processing uses the [GerrySant/pose](https://github.com/GerrySant/pose/tree/1ed292b03ff627fa9e2594b944c853ec7172aa74) fork's `load_alphapose_wholebody_from_json` function, which converts AlphaPose JSON output to the `.pose` binary format.
-
-Install:
-```bash
-bash scripts/setup_venv.sh
-```
-
-Convert:
-```python
-from pose_format.utils.alphapose import load_alphapose_wholebody_from_json
-```
 
 ---
 
