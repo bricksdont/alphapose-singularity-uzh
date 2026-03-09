@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
-# Build the AlphaPose Singularity container from source.
-# This is NOT a simple pull — it compiles AlphaPose inside the container.
-# Expected build time: 30–60 minutes.
+# Build the AlphaPose Singularity container from the base image on GHCR.
+#
+# This is fast (~2 minutes) — it pulls the pre-built alphapose-base image
+# from GHCR and adds any extra Python dependencies defined in alphapose.def.
+#
+# Prerequisites:
+#   - alphapose-base image must be available on GHCR (pushed via push_to_ghcr.sh)
+#   - Apptainer ≥ 1.1 or Singularity with ORAS support
+#
+# If the base image is not on GHCR yet, build it first:
+#   bash scripts/build_base_container.sh
+#   bash scripts/push_to_ghcr.sh
+#
+# Usage:
+#   bash scripts/build_container.sh
 
 set -euo pipefail
 
@@ -24,10 +36,6 @@ if [ -f "$SIF" ]; then
     exit 0
 fi
 
-echo "WARNING: Building AlphaPose from source takes 30–60 minutes."
-echo "The build requires internet access and ~10 GB of disk space."
-echo ""
-
 # Try apptainer first, fall back to singularity
 if command -v apptainer &>/dev/null; then
     BUILD_CMD="apptainer build"
@@ -40,6 +48,7 @@ fi
 
 echo "Using: $BUILD_CMD"
 echo "Output: $SIF"
+echo "Base:   oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose-base:latest"
 echo ""
 
 cd "$REPO_DIR"

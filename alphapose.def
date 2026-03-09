@@ -1,62 +1,13 @@
-Bootstrap: docker
-From: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
+Bootstrap: oras
+From: ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose-base:latest
 
 %labels
-    Author UZH
-    Description AlphaPose pose estimation container
+    Author Mathias Müller
+    Description AlphaPose pose estimation container (layered on alphapose-base)
 
 %post
-    # Suppress interactive prompts during apt installs
-    export DEBIAN_FRONTEND=noninteractive
-
-    # Install system dependencies
-    apt-get update && apt-get install -y \
-        git \
-        libyaml-dev \
-        wget \
-        libgl1-mesa-glx \
-        libglib2.0-0 \
-        && rm -rf /var/lib/apt/lists/*
-
-    # Install Python dependencies
-    pip install --no-cache-dir \
-        cython \
-        "numpy==1.26.4" \
-        "opencv-python==4.11.0.86" \
-        scipy \
-        tqdm \
-        munkres \
-        easydict \
-        halpecocotools \
-        pyyaml \
-        tensorboardX \
-        gdown
-
-    # Clone AlphaPose
-    git clone https://github.com/MVIG-SJTU/AlphaPose.git /opt/alphapose
-
-    # Checkout known-working commit (verified by GerrySant install script)
-    git -C /opt/alphapose checkout c60106d19afb443e964df6f06ed1842962f5f1f7
-
-    # Set CUDA paths for build
-    export PATH=/usr/local/cuda/bin:$PATH
-    export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
-
-    # Explicitly set CUDA arch list — required when building without a GPU
-    # (torch cannot auto-detect architectures at build time in a container)
-    export TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0 7.5 8.0 8.6"
-
-    # Pre-install matplotlib and contourpy via pip to avoid easy_install
-    # trying to fetch contourpy>=1.0.1 from source — newer contourpy dropped
-    # setup.py and easy_install cannot handle pyproject.toml-only packages.
-    pip install --no-cache-dir matplotlib contourpy
-
-    # Build AlphaPose
-    cd /opt/alphapose && python setup.py build develop
-
-    # Create directories for model bind mounts
-    mkdir -p /opt/alphapose/detector/yolo/data
-    mkdir -p /opt/alphapose/pretrained_models
+    # Add extra Python dependencies here as needed, e.g.:
+    # pip install --no-cache-dir some-package==1.2.3
 
 %environment
     export PATH=/usr/local/cuda/bin:$PATH
