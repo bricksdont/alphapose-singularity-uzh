@@ -188,12 +188,6 @@ squeue -u $USER
 tail -f /path/to/output/.slurm_logs/job_*.out
 ```
 
-**Building the container on the cluster:** Login nodes may not have enough memory to build the SIF image. Submit it as a SLURM job instead:
-
-```bash
-sbatch scripts/slurm_build_container.sh
-```
-
 ---
 
 ## Models
@@ -261,6 +255,14 @@ bash scripts/push_to_ghcr.sh --tag v1.0 --user bricksdont --repo alphapose-singu
 By default GHCR packages are private. To allow public access, go to:
 
 > GitHub → Your profile → Packages → `alphapose` → Package Settings → Change visibility → Public
+
+### Building the container on the cluster
+
+Login nodes may not have enough memory to build the SIF image. Submit it as a SLURM job instead:
+
+```bash
+sbatch scripts/slurm_build_container.sh
+```
 
 ---
 
