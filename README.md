@@ -23,20 +23,15 @@ Mirrors the structure and conventions of [openpose-singularity-uzh](https://gith
 
 ## Quick Start
 
-### 1. Build the container
+### 1. Get the container
 
-> **Note:** Building compiles AlphaPose from source and takes 30–60 minutes.
+Pull the pre-built image from GHCR (recommended):
 
 ```bash
-bash scripts/build_container.sh
+singularity pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
 ```
 
-On a SLURM cluster, submit as a job instead:
-```bash
-bash scripts/slurm_build_container.sh
-```
-
-> **Tip:** If the build fails repeatedly, temporary files from previous attempts may have exhausted disk space in `/tmp`. Check with `du -sh /tmp/build-temp-*` and remove any leftover directories before retrying.
+> If the pull fails or you need to customise the container, see the [Pushing the Container to GHCR](#pushing-the-container-to-ghcr) section for instructions on building from source.
 
 ### 2. Test GPU access
 
@@ -149,9 +144,26 @@ Post-processing uses the [GerrySant/pose](https://github.com/GerrySant/pose/tree
 
 ---
 
+## Building the Container from Source
+
+If the GHCR pull fails or you need to customise the container, build from source:
+
+```bash
+bash scripts/build_container.sh
+```
+
+> **Note:** This compiles AlphaPose from source and takes 30–60 minutes. Requires internet access and ~35 GB of free disk space.
+
+On a SLURM cluster, submit as a job instead:
+```bash
+bash scripts/slurm_build_container.sh
+```
+
+> **Tip:** If the build fails repeatedly, temporary files from previous attempts may have exhausted disk space in `/tmp`. Check with `du -sh /tmp/build-temp-*` and remove any leftover directories before retrying.
+
 ## Pushing the Container to GHCR
 
-Once built, the `alphapose.sif` image can be pushed to the [GitHub Container Registry (GHCR)](https://ghcr.io) so others can pull it directly without building from source.
+Once built, the `alphapose.sif` image can be pushed to GHCR so others can pull it directly.
 
 ### Prerequisites
 
@@ -172,12 +184,6 @@ bash scripts/push_to_ghcr.sh
 With options:
 ```bash
 bash scripts/push_to_ghcr.sh --tag v1.0 --user bricksdont --repo alphapose-singularity-uzh
-```
-
-### Pull (for end users)
-
-```bash
-singularity pull oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
 ```
 
 ### Making the package public
