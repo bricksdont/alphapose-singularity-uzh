@@ -16,10 +16,16 @@ Singularity/Apptainer container pipeline for running [AlphaPose](https://github.
 - NVIDIA GPU with CUDA drivers (for inference)
 - Python 3.8+ (for post-processing venv)
 - Internet access for model download
+- For building the container (usually not required): ~ 35GB of disk space
 
 ---
 
 ## Quick Start
+
+```bash
+git clone https://github.com/bricksdont/alphapose-singularity-uzh
+cd alphapose-singularity-uzh
+```
 
 ### 1. Get the container
 
