@@ -345,7 +345,7 @@ alphapose-singularity-uzh/
 
 ```bibtex
 @misc{muller-et-al-2026alphapose-singularity-uzh, 
-    title={Singularity/Apptainer container pipeline for running AlphaPose whole-body pose estimation on videos at UZH.},
+    title={Singularity/Apptainer container pipeline for running AlphaPose whole-body pose estimation},
     author={M{\"u}ller, Mathias and Sant, Gerard},
     howpublished={\url{https://github.com/bricksdont/alphapose-singularity-uzh}},
     year={2026}
