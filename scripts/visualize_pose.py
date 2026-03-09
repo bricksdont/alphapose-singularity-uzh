@@ -33,6 +33,18 @@ def parse_args():
         default=None,
         help="Path to original video (optional; used as background)"
     )
+    parser.add_argument(
+        "--hide-legs",
+        action="store_true",
+        default=False,
+        help="Zero out leg keypoints before rendering"
+    )
+    parser.add_argument(
+        "--thickness",
+        type=int,
+        default=1,
+        help="Line/point thickness for skeleton rendering (default: 1)"
+    )
     return parser.parse_args()
 
 
@@ -52,6 +64,7 @@ def main():
         import cv2
         from pose_format import Pose
         from pose_format.pose_visualizer import PoseVisualizer
+        from pose_format.utils.generic import pose_hide_legs
     except ImportError as e:
         print(f"ERROR: Could not import required library: {e}", file=sys.stderr)
         print("Install dependencies: bash scripts/setup_venv.sh", file=sys.stderr)
@@ -74,8 +87,11 @@ def main():
             cap.release()
             pose.body.fps = video_fps
 
+    if args.hide_legs:
+        pose = pose_hide_legs(pose)
+
     print("Rendering visualization...")
-    v = PoseVisualizer(pose)
+    v = PoseVisualizer(pose, thickness=args.thickness)
 
     if args.video:
         frames = v.draw_on_video(args.video)
