@@ -338,3 +338,16 @@ alphapose-singularity-uzh/
 - [GerrySant/pose PR#191](https://github.com/sign-language-processing/pose/pull/191)
 - [openpose-singularity-uzh](https://github.com/bricksdont/openpose-singularity-uzh)
 - [GerrySant install script](https://github.com/GerrySant/multimodalhugs-pipelines/blob/multiple_support/scripts/environment/install-scripts/install_alphapose.sh)
+
+---
+
+## Acknowledgements
+
+```bibtex
+@misc{obrien-et-al-2026video-to-pose, 
+    title={Convenience code for installing and using several pose estimation systems},
+    author={M{\"u}ller, Mathias and Sant, Gerard},
+    howpublished={\url{https://github.com/ZurichNLP/video-to-pose}},
+    year={2026}
+}
+```
