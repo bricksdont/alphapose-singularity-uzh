@@ -1,52 +1,42 @@
 #!/usr/bin/env bash
 # Submit parallel SLURM jobs for batch AlphaPose processing.
-# Videos in the input directory are split into chunks and each chunk
-# is processed by a separate SLURM job.
+#
+# Videos in the input directory are distributed across N chunks.
+# Each chunk is processed by a separate GPU job via run_alphapose_api.sh,
+# which loads the model once and processes all videos in the chunk.
 #
 # Usage:
 #   bash scripts/slurm_submit.sh <input_dir> <output_dir> [options]
 #
 # Options:
-#   --chunk-size N       Videos per job (default: 5)
+#   --chunks N           Number of parallel jobs (default: 4)
 #   --keypoints 136|133  Keypoints (default: 136)
 #   --track              Enable pose tracking
 #   --partition <name>   SLURM partition (default: gpu)
 #   --time <HH:MM:SS>    Time limit per job (default: 04:00:00)
-#   --mem <MB>           Memory per job (default: 32000)
-#   --cpus N             CPUs per job (default: 4)
-#   --gres <spec>        GPU resource spec (default: gpu:1)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Defaults
-INPUT_DIR=""
-OUTPUT_DIR=""
-CHUNK_SIZE=5
+NUM_CHUNKS=4
 KEYPOINTS="136"
 TRACK_FLAG=""
 PARTITION="gpu"
 TIME_LIMIT="04:00:00"
-MEM="32000"
-CPUS=4
-GRES="gpu:1"
 
 # Parse args
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --chunk-size)   CHUNK_SIZE="$2"; shift 2 ;;
-        --keypoints)    KEYPOINTS="$2"; shift 2 ;;
-        --track)        TRACK_FLAG="--track"; shift ;;
-        --partition)    PARTITION="$2"; shift 2 ;;
-        --time)         TIME_LIMIT="$2"; shift 2 ;;
-        --mem)          MEM="$2"; shift 2 ;;
-        --cpus)         CPUS="$2"; shift 2 ;;
-        --gres)         GRES="$2"; shift 2 ;;
+        --chunks)     NUM_CHUNKS="$2"; shift 2 ;;
+        --keypoints)  KEYPOINTS="$2"; shift 2 ;;
+        --track)      TRACK_FLAG="--track"; shift ;;
+        --partition)  PARTITION="$2"; shift 2 ;;
+        --time)       TIME_LIMIT="$2"; shift 2 ;;
         -h|--help)
-            echo "Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [options]"
+            echo "Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [--chunks N] [--keypoints 136|133] [--track] [--partition <name>] [--time <HH:MM:SS>]"
             exit 0
             ;;
         *)
@@ -57,77 +47,92 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ ${#POSITIONAL[@]} -lt 2 ]; then
-    echo "ERROR: input_dir and output_dir required."
+    echo "ERROR: input_dir and output_dir are required."
+    echo "Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [options]"
     exit 1
 fi
 
-INPUT_DIR="${POSITIONAL[0]}"
-OUTPUT_DIR="${POSITIONAL[1]}"
+INPUT_DIR="$(realpath "${POSITIONAL[0]}")"
+OUTPUT_DIR="$(realpath -m "${POSITIONAL[1]}")"
 
 if [ ! -d "$INPUT_DIR" ]; then
     echo "ERROR: Input directory not found: $INPUT_DIR"
     exit 1
 fi
 
-# Find videos
-mapfile -t VIDEOS < <(find "$INPUT_DIR" -maxdepth 1 -type f \( \
-    -iname "*.mp4" -o -iname "*.avi" -o -iname "*.mov" -o -iname "*.mkv" \
-\) | sort)
-
-if [ ${#VIDEOS[@]} -eq 0 ]; then
-    echo "No videos found in: $INPUT_DIR"
-    exit 0
+if ! command -v sbatch &>/dev/null; then
+    echo "ERROR: sbatch not found. This script must be run on a SLURM cluster."
+    exit 1
 fi
 
-echo "=== SLURM batch submission ==="
-echo "Videos:     ${#VIDEOS[@]}"
-echo "Chunk size: $CHUNK_SIZE"
-echo "Partition:  $PARTITION"
+# Collect video files
+shopt -s nullglob
+VIDEO_FILES=("$INPUT_DIR"/*.mp4 "$INPUT_DIR"/*.avi "$INPUT_DIR"/*.mov "$INPUT_DIR"/*.mkv)
+shopt -u nullglob
+
+if [ ${#VIDEO_FILES[@]} -eq 0 ]; then
+    echo "ERROR: No video files (*.mp4, *.avi, *.mov, *.mkv) found in $INPUT_DIR"
+    exit 1
+fi
+
+TOTAL=${#VIDEO_FILES[@]}
+
+# Cap chunks to number of videos
+if [ "$NUM_CHUNKS" -gt "$TOTAL" ]; then
+    NUM_CHUNKS=$TOTAL
+fi
+
+echo "=== AlphaPose SLURM batch submission ==="
+echo "Input:     $INPUT_DIR"
+echo "Output:    $OUTPUT_DIR"
+echo "Videos:    $TOTAL"
+echo "Chunks:    $NUM_CHUNKS"
+echo "Partition: $PARTITION"
+echo "Time:      $TIME_LIMIT"
 echo ""
 
-LOGS_DIR="$REPO_DIR/logs"
-CHUNKS_DIR="$REPO_DIR/data/chunks"
-mkdir -p "$LOGS_DIR" "$CHUNKS_DIR"
+# Create staging and log directories
+STAGING_DIR="$OUTPUT_DIR/.slurm_chunks"
+LOG_DIR="$OUTPUT_DIR/.slurm_logs"
+mkdir -p "$LOG_DIR"
 
-# Split videos into chunks
-CHUNK_IDX=0
-CHUNK_FILE=""
-JOB_IDS=()
+# Clean up any previous staging
+rm -rf "$STAGING_DIR"
+mkdir -p "$STAGING_DIR"
 
-for i in "${!VIDEOS[@]}"; do
-    if (( i % CHUNK_SIZE == 0 )); then
-        CHUNK_IDX=$(( i / CHUNK_SIZE ))
-        CHUNK_FILE="$CHUNKS_DIR/chunk_${CHUNK_IDX}.txt"
-        > "$CHUNK_FILE"
-    fi
-    echo "${VIDEOS[$i]}" >> "$CHUNK_FILE"
+for i in $(seq 0 $((NUM_CHUNKS - 1))); do
+    mkdir -p "$STAGING_DIR/chunk_$i"
 done
 
-TOTAL_CHUNKS=$(( (${#VIDEOS[@]} + CHUNK_SIZE - 1) / CHUNK_SIZE ))
-echo "Submitting $TOTAL_CHUNKS jobs..."
+# Distribute videos round-robin via symlinks
+IDX=0
+for VIDEO_FILE in "${VIDEO_FILES[@]}"; do
+    CHUNK=$((IDX % NUM_CHUNKS))
+    ln -s "$VIDEO_FILE" "$STAGING_DIR/chunk_$CHUNK/$(basename "$VIDEO_FILE")"
+    IDX=$((IDX + 1))
+done
+
+# Report distribution
+for i in $(seq 0 $((NUM_CHUNKS - 1))); do
+    COUNT=$(find "$STAGING_DIR/chunk_$i" -type l | wc -l)
+    echo "  Chunk $i: $COUNT video(s)"
+done
 echo ""
 
-for (( c=0; c<TOTAL_CHUNKS; c++ )); do
-    CHUNK_FILE="$CHUNKS_DIR/chunk_${c}.txt"
-
+# Submit SLURM jobs
+JOB_IDS=()
+for i in $(seq 0 $((NUM_CHUNKS - 1))); do
+    CHUNK_DIR="$STAGING_DIR/chunk_$i"
     JOB_ID=$(sbatch \
         --partition="$PARTITION" \
         --time="$TIME_LIMIT" \
-        --mem="$MEM" \
-        --cpus-per-task="$CPUS" \
-        --gres="$GRES" \
-        --output="$LOGS_DIR/alphapose_chunk${c}_%j.out" \
-        --error="$LOGS_DIR/alphapose_chunk${c}_%j.err" \
-        --job-name="alphapose_c${c}" \
-        "$SCRIPT_DIR/slurm_job.sh" \
-            "$CHUNK_FILE" \
-            "$OUTPUT_DIR" \
-            "$KEYPOINTS" \
-            "$TRACK_FLAG" \
-        | awk '{print $NF}')
-
-    echo "  Submitted chunk $c: job $JOB_ID ($(wc -l < "$CHUNK_FILE") videos)"
+        --output="$LOG_DIR/job_%j.out" \
+        --error="$LOG_DIR/job_%j.err" \
+        --job-name="alphapose_$i" \
+        "$SCRIPT_DIR/slurm_job.sh" "$CHUNK_DIR" "$OUTPUT_DIR" "$KEYPOINTS" "$TRACK_FLAG" \
+        | grep -o '[0-9]*')
     JOB_IDS+=("$JOB_ID")
+    echo "Submitted chunk $i -> SLURM job $JOB_ID"
 done
 
 echo ""
@@ -135,5 +140,5 @@ echo "=== All jobs submitted ==="
 echo "Job IDs: ${JOB_IDS[*]}"
 echo ""
 echo "Monitor with:"
-echo "  squeue -u $USER"
-echo "  tail -f $LOGS_DIR/alphapose_chunk0_*.out"
+echo "  squeue -u \$USER"
+echo "  tail -f $LOG_DIR/job_*.out"

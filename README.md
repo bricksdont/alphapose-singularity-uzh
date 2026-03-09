@@ -148,6 +148,54 @@ Options:
   --outdir <path>      Output directory (required)
 ```
 
+### `scripts/slurm_submit.sh` / `scripts/slurm_job.sh`
+
+Submit parallel SLURM jobs for large-scale batch processing:
+
+```
+Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [options]
+
+Options:
+  --chunks N           Number of parallel jobs (default: 4)
+  --keypoints 136|133  Keypoint format (default: 136)
+  --track              Enable pose tracking
+  --partition <name>   SLURM partition (default: gpu)
+  --time <HH:MM:SS>    Time limit per job (default: 04:00:00)
+```
+
+---
+
+## SLURM Cluster Processing
+
+For large-scale processing on the UZH ScienceCluster, split videos across multiple GPU jobs:
+
+```bash
+bash scripts/slurm_submit.sh <input_dir> <output_dir> [--chunks N]
+```
+
+This distributes videos across N SLURM jobs (default: 4). Each job processes its chunk using `run_alphapose_api.sh`, which loads the model **once** per job and processes all assigned videos in a loop — significantly faster than reloading the model per video.
+
+**Prerequisites:** the container image (`alphapose.sif`), model weights (`data/models/`), and Python virtual environment (`venv/`) must already be set up. The script must be run on a SLURM cluster with `sbatch` available.
+
+**Example:**
+
+```bash
+# From the repo directory on the cluster:
+bash scripts/slurm_submit.sh /path/to/videos /path/to/output --chunks 8
+
+# Monitor jobs:
+squeue -u $USER
+
+# View logs:
+tail -f /path/to/output/.slurm_logs/job_*.out
+```
+
+**Building the container on the cluster:** Login nodes may not have enough memory to build the SIF image. Submit it as a SLURM job instead:
+
+```bash
+sbatch scripts/slurm_build_container.sh
+```
+
 ---
 
 ## Models
