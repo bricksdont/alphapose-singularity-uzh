@@ -54,14 +54,45 @@ data/
       wholebody133_dcn_combined.pth
 ```
 
+## Container image on GHCR
+
+Pre-built image at `oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest`.
+Pull with: `singularity pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest`
+
+## Runtime compatibility fixes (applied at singularity exec time, not in container)
+
+Two issues required workarounds without rebuilding the container:
+
+1. **GL library mismatch**: Singularity `--nv` injects host GL libs (Ubuntu 24.04) that are
+   incompatible with the container's glibc. Fixed via `LD_PRELOAD` of the container's own GL libs.
+   Applied in both `run_alphapose.sh` and `run_alphapose_api.sh`.
+
+2. **numpy type aliases removed** (`np.float`, `np.int`, etc.) in NumPy ≥ 1.24, which breaks
+   `cython_bbox` at import time. Fixed by bind-mounting `scripts/sitecustomize.py` into the
+   container, which restores the aliases at Python startup.
+
+## Two inference modes
+
+- **`run_alphapose.sh`**: calls `demo_inference.py`, one video per invocation, can produce
+  annotated video (`--save-video`). ~26 s/video on Tesla T4.
+- **`run_alphapose_api.sh`**: calls `scripts/alphapose_estimation.py` via `singularity exec`,
+  loads model once and loops over all videos in a directory. ~7 s/video after first (~24 s).
+  JSON output only. 2.3× faster for batches.
+
+## .pose conversion: always pass --original-video
+
+`load_alphapose_wholebody_from_json` defaults to `width=1000, height=1000` if dimensions are not
+provided. Always pass `--original-video` to `convert_to_pose.sh` so the header matches the actual
+frame size; otherwise visualizations render small and offset in the upper-left corner.
+
 ## Typical workflow
 
 ```bash
-bash scripts/build_container.sh
+singularity pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
+bash scripts/setup_venv.sh
 bash scripts/download_models.sh
 bash scripts/download_test_video.sh
 bash scripts/run_alphapose.sh --video data/input/test.mp4
-bash scripts/setup_venv.sh
-bash scripts/convert_to_pose.sh -i data/output/keypoints/alphapose-results.json -o data/output/test.pose
-bash scripts/visualize_pose.sh -i data/output/test.pose -o data/output/test_viz.mp4
+bash scripts/convert_to_pose.sh -i data/output/keypoints/alphapose-results.json -o data/output/test.pose --original-video data/input/test.mp4
+bash scripts/visualize_pose.sh -i data/output/test.pose -o data/output/test_viz.mp4 --video data/input/test.mp4
 ```
