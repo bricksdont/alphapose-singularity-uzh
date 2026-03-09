@@ -344,10 +344,10 @@ alphapose-singularity-uzh/
 ## Acknowledgements
 
 ```bibtex
-@misc{obrien-et-al-2026video-to-pose, 
-    title={Convenience code for installing and using several pose estimation systems},
+@misc{muller-et-al-2026alphapose-singularity-uzh, 
+    title={Singularity/Apptainer container pipeline for running AlphaPose whole-body pose estimation on videos at UZH.},
     author={M{\"u}ller, Mathias and Sant, Gerard},
-    howpublished={\url{https://github.com/ZurichNLP/video-to-pose}},
+    howpublished={\url{https://github.com/bricksdont/alphapose-singularity-uzh}},
     year={2026}
 }
 ```
