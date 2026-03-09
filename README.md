@@ -63,7 +63,7 @@ Downloads a short sample video to `data/input/test.mp4`.
 
 ### 6. Run AlphaPose
 
-There are two scripts; both produce identical keypoint output (136 keypoints per frame, COCO-format JSON).
+There are two scripts; both produce identical keypoint output (default scheme: 136 keypoints per frame, COCO-format JSON).
 
 **Option A — `run_alphapose.sh`** (single video only):
 
