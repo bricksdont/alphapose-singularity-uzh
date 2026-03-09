@@ -35,11 +35,24 @@ fi
 echo "WARNING: Building AlphaPose from source takes 30–60 minutes."
 echo "The build requires internet access and ~10 GB of disk space."
 echo ""
-echo "Tip: If the build fails repeatedly, leftover /tmp/build-temp-* directories"
-echo "from previous attempts may have exhausted disk space. Check with:"
-echo "  du -sh /tmp/build-temp-*"
-echo "and remove any stale directories before retrying."
-echo ""
+
+# Check available disk space — build needs ~35 GB free (uncompressed sandbox
+# can be 3-4x the final .sif size of ~9 GB)
+AVAIL_GB=$(df --output=avail -BG "$REPO_DIR" | tail -1 | tr -d 'G ')
+REQUIRED_GB=35
+if [ "$AVAIL_GB" -lt "$REQUIRED_GB" ]; then
+    echo "WARNING: Only ${AVAIL_GB} GB free on the filesystem containing $REPO_DIR."
+    echo "         The build needs at least ${REQUIRED_GB} GB. It may fail at the"
+    echo "         final squashfs step. Consider freeing space first."
+    echo "         Leftover /tmp/build-temp-* directories from previous failed"
+    echo "         builds are a common culprit:"
+    echo "           du -sh /tmp/build-temp-* 2>/dev/null"
+    echo "           rm -rf /tmp/build-temp-*"
+    echo ""
+else
+    echo "Disk space: ${AVAIL_GB} GB available (need ~${REQUIRED_GB} GB) — OK"
+    echo ""
+fi
 
 # Try apptainer first, fall back to singularity
 if command -v apptainer &>/dev/null; then
