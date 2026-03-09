@@ -79,7 +79,7 @@ echo ""
 
 # Authenticate
 echo "Authenticating with ghcr.io..."
-echo "$GITHUB_TOKEN" | $SIF_CMD remote login \
+echo "$GITHUB_TOKEN" | $SIF_CMD registry login \
     --username "$GITHUB_USER" \
     --password-stdin \
     oras://ghcr.io
