@@ -6,9 +6,8 @@ Singularity/Apptainer container pipeline for running [AlphaPose](https://github.
 
 - **136 keypoints** (HALPE_136, default) or **133 keypoints** (COCO WholeBody)
 - Whole-body pose: face, hands, body, feet
-- Output: JSON keypoints, annotated video, `.pose` format (pose-format library)
+- Output: JSON keypoints, annotated video, `.pose` format ([pose-format library](https://github.com/GerrySant/pose/tree/1ed292b03ff627fa9e2594b944c853ec7172aa74))
 - SLURM support for batch processing on HPC clusters
-- Post-processing via [GerrySant/pose](https://github.com/GerrySant/pose/tree/1ed292b03ff627fa9e2594b944c853ec7172aa74)
 
 ## Requirements
 
@@ -199,12 +198,6 @@ tail -f /path/to/output/.slurm_logs/job_*.out
 | COCO WholeBody DCN Combined | 133 | — | — | `1aP0nYujw32H-VoJBVsXS-DsBBY-UwI8Y` |
 
 The default 136-kpt model (Multi-domain DCN Combined) is trained on both HALPE and COCO WholeBody datasets with deformable convolutions for strong whole-body accuracy.
-
----
-
-## Converting to binary `.pose` files (post-processing)
-
-Post-processing uses the [GerrySant/pose](https://github.com/GerrySant/pose/tree/1ed292b03ff627fa9e2594b944c853ec7172aa74) fork's `load_alphapose_wholebody_from_json` function, which converts AlphaPose JSON output to the `.pose` binary format.
 
 ---
 
