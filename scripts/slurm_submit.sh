@@ -12,6 +12,8 @@
 #   --chunks N           Number of parallel jobs (default: 1)
 #   --keypoints 136|133  Keypoints (default: 136)
 #   --time <HH:MM:SS>    Time limit per job (default: 24:00:00)
+#   --lowprio            Use low-priority partition (--partition=lowprio --gpus=V100:1)
+#                        Default (no flag): --gpus=1 --constraint=GPUMEM32GB
 
 set -euo pipefail
 
@@ -21,6 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NUM_CHUNKS=1
 KEYPOINTS="136"
 TIME_LIMIT="24:00:00"
+LOWPRIO=0
 
 # Parse args
 POSITIONAL=()
@@ -29,8 +32,9 @@ while [[ $# -gt 0 ]]; do
         --chunks)     NUM_CHUNKS="$2"; shift 2 ;;
         --keypoints)  KEYPOINTS="$2"; shift 2 ;;
         --time)       TIME_LIMIT="$2"; shift 2 ;;
+        --lowprio)    LOWPRIO=1; shift ;;
         -h|--help)
-            echo "Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [--chunks N] [--keypoints 136|133] [--time <HH:MM:SS>]"
+            echo "Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [--chunks N] [--keypoints 136|133] [--time <HH:MM:SS>] [--lowprio]"
             exit 0
             ;;
         *)
@@ -76,12 +80,19 @@ if [ "$NUM_CHUNKS" -gt "$TOTAL" ]; then
     NUM_CHUNKS=$TOTAL
 fi
 
+if [ "$LOWPRIO" -eq 1 ]; then
+    GPU_ARGS="--partition=lowprio --gpus=V100:1"
+else
+    GPU_ARGS="--gpus=1 --constraint=GPUMEM32GB"
+fi
+
 echo "=== AlphaPose SLURM batch submission ==="
 echo "Input:     $INPUT_DIR"
 echo "Output:    $OUTPUT_DIR"
 echo "Videos:    $TOTAL"
 echo "Chunks:    $NUM_CHUNKS"
 echo "Time:      $TIME_LIMIT"
+echo "GPU args:  $GPU_ARGS"
 echo ""
 
 # Create staging and log directories
@@ -117,6 +128,7 @@ JOB_IDS=()
 for i in $(seq 0 $((NUM_CHUNKS - 1))); do
     CHUNK_DIR="$STAGING_DIR/chunk_$i"
     JOB_ID=$(sbatch \
+        $GPU_ARGS \
         --time="$TIME_LIMIT" \
         --output="$LOG_DIR/job_%j.out" \
         --error="$LOG_DIR/job_%j.err" \

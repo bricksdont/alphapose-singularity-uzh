@@ -241,6 +241,8 @@ Options:
   --chunks N           Number of parallel jobs (default: 1)
   --keypoints 136|133  Keypoint format (default: 136)
   --time <HH:MM:SS>    Time limit per job (default: 24:00:00)
+  --lowprio            Use low-priority partition: --partition=lowprio --gpus=V100:1
+                       Default (no flag): --gpus=1 --constraint=GPUMEM32GB
 ```
 
 ---
