@@ -8,7 +8,6 @@
 #   $3  keypoints (136 or 133, default: 136)
 
 #SBATCH --gpus=1
-#SBATCH --constraint=GPUMEM32GB
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=16G
 #SBATCH --time=24:00:00
