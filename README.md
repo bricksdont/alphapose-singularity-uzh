@@ -82,6 +82,15 @@ bash scripts/batch_to_pose.sh data/input/ data/output/
 
 ## SLURM Cluster Processing
 
+**Getting the container on the cluster:** Login nodes may have network or resource limits that prevent pulling large images. Submit it as a SLURM job instead — the job first tries to pull the pre-built image from GHCR; if that fails, it builds from source automatically:
+
+```bash
+sbatch scripts/slurm_build_container.sh
+
+# To skip the pull and always build from source:
+sbatch scripts/slurm_build_container.sh --force-rebuild
+```
+
 For large-scale processing on the UZH ScienceCluster, split videos across multiple GPU jobs:
 
 ```bash
@@ -106,15 +115,6 @@ squeue -u $USER
 
 # View logs:
 tail -f /path/to/output/.slurm_logs/job_*.out
-```
-
-**Getting the container on the cluster:** Login nodes may have network or resource limits that prevent pulling large images. Submit it as a SLURM job instead — the job first tries to pull the pre-built image from GHCR; if that fails, it builds from source automatically:
-
-```bash
-sbatch scripts/slurm_build_container.sh
-
-# To skip the pull and always build from source:
-sbatch scripts/slurm_build_container.sh --force-rebuild
 ```
 
 ---
