@@ -51,6 +51,8 @@ else
     echo ""
     if apptainer pull "$SIF" "$GHCR_URI"; then
         echo ""
+        echo "Cleaning apptainer cache..."
+        apptainer cache clean --force
         echo "=== Pull complete: $SIF ==="
     else
         echo ""
