@@ -156,6 +156,8 @@ bash scripts/run_alphapose_api.sh \
 
 The API mode is **~2.3× faster** for batches. The speed advantage grows with the number of videos.
 
+**CPU mode** — all three scripts (`batch_to_pose.sh`, `run_alphapose.sh`, `run_alphapose_api.sh`) accept a `--cpu` flag. This passes `--gpus -1` to AlphaPose and drops the `--nv` GPU flag from the container call, so no GPU is required. In practice this is not feasible for real workloads: CPU inference is roughly 50–100× slower than GPU (several minutes per short video vs. seconds), because ResNet50 inference and the YOLO detector are both heavily parallelised for CUDA. Use `--cpu` only for pipeline testing on machines without a GPU.
+
 ### Step 2: Convert JSON to .pose format
 
 ```bash
@@ -187,6 +189,7 @@ Usage: bash scripts/batch_to_pose.sh <input_dir> <output_dir> [options]
 
 Options:
   --keypoints 136|133  Number of keypoints (default: 136)
+  --cpu                Run on CPU instead of GPU (very slow, for testing only)
 ```
 
 ### `scripts/run_alphapose.sh`
@@ -202,6 +205,7 @@ Options:
   --track              Enable pose tracking
   --save-video         Save AlphaPose-rendered annotated video (default: off)
   --outdir <path>      Output directory (required)
+  --cpu                Run on CPU instead of GPU (very slow, for testing only)
 ```
 
 ### `scripts/run_alphapose_api.sh`
@@ -218,6 +222,7 @@ Options:
   --track              Enable pose tracking
   --flip               Enable horizontal flip augmentation
   --outdir <path>      Output directory (required)
+  --cpu                Run on CPU instead of GPU (very slow, for testing only)
 ```
 
 ### `scripts/slurm_submit.sh` / `scripts/slurm_job.sh`

@@ -10,6 +10,7 @@
 #
 # Options:
 #   --keypoints 136|133  Number of keypoints (default: 136)
+#   --cpu                Run on CPU instead of GPU (very slow, for testing only)
 
 set -euo pipefail
 
@@ -20,14 +21,16 @@ VENV_DIR="$REPO_DIR/venv"
 
 # Defaults
 KEYPOINTS="136"
+CPU_FLAG=""
 
 # Parse args
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --keypoints)  KEYPOINTS="$2"; shift 2 ;;
+        --cpu)        CPU_FLAG="--cpu"; shift ;;
         -h|--help)
-            echo "Usage: bash scripts/batch_to_pose.sh <input_dir> <output_dir> [--keypoints 136|133]"
+            echo "Usage: bash scripts/batch_to_pose.sh <input_dir> <output_dir> [--keypoints 136|133] [--cpu]"
             exit 0
             ;;
         *)
@@ -80,6 +83,7 @@ echo "=== AlphaPose batch processing ==="
 echo "Input:     $INPUT_DIR ($TOTAL video(s))"
 echo "Output:    $OUTPUT_DIR"
 echo "Keypoints: $KEYPOINTS"
+[ -n "$CPU_FLAG" ] && echo "Device:    CPU (slow — for testing only)"
 echo ""
 
 # Step 1: Run AlphaPose on the whole directory (model loads once for all videos)
@@ -90,7 +94,8 @@ echo "--- Step 1/2: Running AlphaPose ---"
 bash "$SCRIPT_DIR/run_alphapose_api.sh" \
     --video "$INPUT_DIR" \
     --outdir "$TEMP_JSON" \
-    --keypoints "$KEYPOINTS"
+    --keypoints "$KEYPOINTS" \
+    $CPU_FLAG
 echo ""
 
 # Step 2: Convert each JSON to .pose
