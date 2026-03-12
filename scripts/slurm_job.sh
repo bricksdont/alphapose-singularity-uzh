@@ -14,7 +14,7 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$SLURM_SUBMIT_DIR/scripts"
 
 CHUNK_DIR="${1:?chunk dir required}"
 OUTPUT_DIR="${2:?output dir required}"
