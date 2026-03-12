@@ -13,8 +13,7 @@ Singularity/Apptainer container pipeline for running [AlphaPose](https://github.
 
 - Singularity ≥ 3.x or Apptainer ≥ 1.x
 - NVIDIA GPU with CUDA drivers (for inference)
-- Python 3.8+ (for post-processing venv)
-- Internet access for model download
+- Python 3.8+ (for converting Alphapose output to .pose files)
 - For building the container (usually not required): ~ 35GB of disk space
 
 ---
