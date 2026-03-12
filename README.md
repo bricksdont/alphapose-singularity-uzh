@@ -50,6 +50,8 @@ module load apptainer
 bash scripts/test_gpu.sh
 ```
 
+This is only for a local machine with a GPU, not the login node of a cluster. To test GPU there you may need to request an interactive GPU node first.
+
 ### 3. Set up venv
 
 ```bash
