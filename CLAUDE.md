@@ -7,7 +7,7 @@ Mirrors conventions of [openpose-singularity-uzh](https://github.com/bricksdont/
 
 ## Key differences from openpose-singularity-uzh
 
-- **No Docker pull**: AlphaPose must be built from source (`alphapose.def`)
+- **Pre-built image on GHCR**: pull with `apptainer pull` or `singularity pull` (see below); building from source is the fallback
 - **Model weights**: downloaded separately via `gdown` from Google Drive; not baked into container
 - **Keypoints**: 136 (HALPE_136, default) or 133 (COCO WholeBody)
 - **Post-processing**: uses `load_alphapose_wholebody_from_json` from `GerrySant/pose` branch
@@ -45,7 +45,7 @@ from pose_format.utils.alphapose import load_alphapose_wholebody_from_json
 ```
 data/
   input/       # user videos (gitignored)
-  output/      # keypoints JSON, videos, .pose files (gitignored)
+  output/      # .pose files (gitignored)
   models/      # downloaded weights (gitignored)
     yolov3-spp.weights
     pretrained_models/
@@ -57,7 +57,21 @@ data/
 ## Container image on GHCR
 
 Pre-built image at `oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest`.
-Pull with: `singularity pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest`
+
+```bash
+# Apptainer
+apptainer pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
+# Singularity
+singularity pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
+```
+
+On the UZH cluster, load apptainer first: `module load apptainer`
+
+**Login nodes may reject large pulls** ("unexpected EOF") due to resource/network limits.
+Use `sbatch scripts/slurm_build_container.sh` instead, which pulls (or builds) inside a proper job.
+
+**Apptainer cache is not auto-cleaned** after a pull. `slurm_build_container.sh` runs
+`apptainer cache clean --force` after a successful pull to free the space.
 
 ## Runtime compatibility fixes (applied at singularity exec time, not in container)
 
@@ -78,6 +92,15 @@ Two issues required workarounds without rebuilding the container:
 - **`run_alphapose_api.sh`**: calls `scripts/alphapose_estimation.py` via `singularity exec`,
   loads model once and loops over all videos in a directory. ~7 s/video after first (~24 s).
   JSON output only. 2.3× faster for batches.
+- **`batch_to_pose.sh`**: the main user-facing script. Wraps `run_alphapose_api.sh` (API mode)
+  followed by `convert_to_pose.sh` for each video. JSON written to a temp dir and cleaned up;
+  only `.pose` files are kept.
+
+## CPU mode: not supported
+
+AlphaPose's Deformable Convolution (DCN) layers are CUDA-only. Passing `--gpus -1` immediately
+raises `NotImplementedError` in `alphapose/models/layers/dcn/deform_conv.py`. All exposed models
+use DCN. A GPU is required.
 
 ## .pose conversion: always pass --original-video
 
@@ -88,11 +111,13 @@ frame size; otherwise visualizations render small and offset in the upper-left c
 ## Typical workflow
 
 ```bash
-singularity pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
+# On the UZH cluster: get container via SLURM job (avoids login node limits)
+sbatch scripts/slurm_build_container.sh
+
+# Local machine with GPU:
+apptainer pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
 bash scripts/setup_venv.sh
 bash scripts/download_models.sh
 bash scripts/download_test_video.sh
-bash scripts/run_alphapose.sh --video data/input/test.mp4
-bash scripts/convert_to_pose.sh -i data/output/keypoints/alphapose-results.json -o data/output/test.pose --original-video data/input/test.mp4
-bash scripts/visualize_pose.sh -i data/output/test.pose -o data/output/test_viz.mp4 --video data/input/test.mp4
+bash scripts/batch_to_pose.sh data/input/ data/output/
 ```
