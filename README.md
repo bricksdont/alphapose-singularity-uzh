@@ -94,7 +94,7 @@ sbatch scripts/slurm_build_container.sh --force-rebuild
 For large-scale processing on the UZH ScienceCluster, split videos across multiple GPU jobs:
 
 ```bash
-bash scripts/slurm_submit.sh <input_dir> <output_dir> [--chunks N]
+bash scripts/slurm_submit.sh <input_dir> <output_dir> [--chunks N] [--lowprio]
 ```
 
 This distributes videos across N SLURM jobs (default: 1). Each job runs `batch_to_pose.sh` on its chunk — AlphaPose loads the model once per job and processes all assigned videos, then converts them to `.pose` files.
