@@ -113,10 +113,13 @@ squeue -u $USER
 tail -f /path/to/output/.slurm_logs/job_*.out
 ```
 
-**Building the container on the cluster:** Login nodes may not have enough memory to build the SIF image. Submit it as a SLURM job instead:
+**Getting the container on the cluster:** Login nodes may have network or resource limits that prevent pulling large images. Submit it as a SLURM job instead — the job first tries to pull the pre-built image from GHCR; if that fails, it builds from source automatically:
 
 ```bash
 sbatch scripts/slurm_build_container.sh
+
+# To skip the pull and always build from source:
+sbatch scripts/slurm_build_container.sh --force-rebuild
 ```
 
 ---
@@ -269,9 +272,12 @@ bash scripts/build_container.sh
 
 > **Note:** This compiles AlphaPose from source and takes 30–60 minutes. Requires internet access and ~35 GB of free disk space.
 
-On a SLURM cluster, submit as a job instead:
+On a SLURM cluster, submit as a job instead (tries GHCR pull first, builds from source if pull fails):
 ```bash
 sbatch scripts/slurm_build_container.sh
+
+# To skip the pull and always build from source:
+sbatch scripts/slurm_build_container.sh --force-rebuild
 ```
 
 > **Tip:** If the build fails repeatedly, temporary files from previous attempts may have exhausted disk space in `/tmp`. Check with `du -sh /tmp/build-temp-*` and remove any leftover directories before retrying.

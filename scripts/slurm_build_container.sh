@@ -1,67 +1,62 @@
-#!/usr/bin/env bash
-# Build the AlphaPose Singularity container as a SLURM job.
-# Useful on clusters where build nodes have internet access and more resources.
+#!/usr/bin/bash -l
+#SBATCH --job-name=alphapose_build
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32G
+#SBATCH --time=02:00:00
+#SBATCH --output=slurm_build_%j.out
+
+# Build (or pull) the AlphaPose container as a SLURM job.
+# By default, tries to pull the pre-built image from GHCR first;
+# falls back to building from source if the pull fails.
 #
 # Usage:
-#   bash scripts/slurm_build_container.sh [options]
+#   sbatch scripts/slurm_build_container.sh [--force-rebuild]
 #
 # Options:
-#   --partition <name>   SLURM partition (default: cpu)
-#   --time <HH:MM:SS>    Time limit (default: 02:00:00)
-#   --mem <MB>           Memory (default: 16000)
-#   --cpus N             CPUs (default: 8)
+#   --force-rebuild   Skip the GHCR pull and always build from source
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(dirname "$SCRIPT_DIR")"
-
-# Defaults
-PARTITION="cpu"
-TIME_LIMIT="02:00:00"
-MEM="16000"
-CPUS=8
-
+FORCE_REBUILD=0
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --partition) PARTITION="$2"; shift 2 ;;
-        --time)      TIME_LIMIT="$2"; shift 2 ;;
-        --mem)       MEM="$2"; shift 2 ;;
-        --cpus)      CPUS="$2"; shift 2 ;;
-        -h|--help)
-            echo "Usage: bash scripts/slurm_build_container.sh [--partition <name>] [--time HH:MM:SS] [--mem MB] [--cpus N]"
-            exit 0
-            ;;
-        *)
-            echo "Unknown argument: $1"
-            exit 1
-            ;;
+        --force-rebuild) FORCE_REBUILD=1; shift ;;
+        *) echo "Unknown argument: $1"; exit 1 ;;
     esac
 done
 
-LOGS_DIR="$REPO_DIR/logs"
-mkdir -p "$LOGS_DIR"
+# SLURM copies job scripts to a temp directory; use SLURM_SUBMIT_DIR for paths.
+SCRIPT_DIR="$SLURM_SUBMIT_DIR/scripts"
+SIF="$SLURM_SUBMIT_DIR/alphapose.sif"
+GHCR_URI="oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest"
 
-echo "=== Submitting container build job ==="
-echo "Partition: $PARTITION"
-echo "Time:      $TIME_LIMIT"
-echo "Memory:    ${MEM}MB"
-echo "CPUs:      $CPUS"
+echo "=== AlphaPose container setup ==="
+echo "Node: $(hostname)"
+echo "SIF:  $SIF"
 echo ""
 
-JOB_ID=$(sbatch \
-    --partition="$PARTITION" \
-    --time="$TIME_LIMIT" \
-    --mem="$MEM" \
-    --cpus-per-task="$CPUS" \
-    --output="$LOGS_DIR/build_container_%j.out" \
-    --error="$LOGS_DIR/build_container_%j.err" \
-    --job-name="alphapose_build" \
-    --wrap="bash $SCRIPT_DIR/build_container.sh" \
-    | awk '{print $NF}')
+module load apptainer
 
-echo "Submitted job: $JOB_ID"
-echo ""
-echo "Monitor with:"
-echo "  squeue -j $JOB_ID"
-echo "  tail -f $LOGS_DIR/build_container_${JOB_ID}.out"
+if [ "$FORCE_REBUILD" -eq 1 ]; then
+    echo "--force-rebuild: skipping GHCR pull, building from source."
+    echo ""
+    rm -f "$SIF"
+    bash "$SCRIPT_DIR/build_container.sh"
+elif [ -f "$SIF" ]; then
+    echo "Container already exists: $SIF"
+    echo "Nothing to do. Use --force-rebuild to overwrite."
+else
+    echo "Attempting to pull from GHCR..."
+    echo "URI: $GHCR_URI"
+    echo ""
+    if apptainer pull "$SIF" "$GHCR_URI"; then
+        echo ""
+        echo "=== Pull complete: $SIF ==="
+    else
+        echo ""
+        echo "Pull failed. Removing any partial file and building from source..."
+        rm -f "$SIF"
+        echo ""
+        bash "$SCRIPT_DIR/build_container.sh"
+    fi
+fi
