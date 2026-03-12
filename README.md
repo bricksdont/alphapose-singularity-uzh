@@ -111,16 +111,15 @@ sbatch scripts/slurm_build_container.sh
 
 ---
 
-## Step-by-step (advanced)
+## Advanced usage
 
-This section describes the individual pipeline steps for users who want more control —
-for debugging, producing annotated videos, or running the steps separately.
+This section is for users who want more control — for debugging, keeping intermediate JSON output, producing annotated videos, or running pipeline steps individually.
 
-### Run AlphaPose to get JSON keypoints
+### Step 1: Run AlphaPose to get JSON keypoints
 
-There are two scripts; both produce identical keypoint output (136 keypoints per frame, COCO-format JSON).
+There are two inference scripts. Both produce identical keypoint output (136 keypoints per frame, COCO-format JSON), but differ in speed and features.
 
-**`run_alphapose.sh`** — single video, can save an annotated overlay video:
+**`run_alphapose.sh`** — single video. Calls AlphaPose's built-in `demo_inference.py`; the model is loaded fresh each time. Can optionally save an annotated skeleton-overlay video.
 
 ```bash
 bash scripts/run_alphapose.sh \
@@ -134,7 +133,7 @@ bash scripts/run_alphapose.sh \
     --save-video
 ```
 
-**`run_alphapose_api.sh`** — single video or directory; loads the model once for all videos (faster for batches):
+**`run_alphapose_api.sh`** — single video or directory. Uses the AlphaPose Python API directly; loads the model once and processes all videos in a loop. Significantly faster for batches; JSON output only (no annotated video). This is what `batch_to_pose.sh` uses internally.
 
 ```bash
 # Single video:
@@ -142,13 +141,22 @@ bash scripts/run_alphapose_api.sh \
     --video data/input/test.mp4 \
     --outdir data/output/keypoints_api
 
-# Directory of videos:
+# Directory of videos (model loads once for all):
 bash scripts/run_alphapose_api.sh \
     --video data/input/ \
     --outdir data/output/keypoints_api
 ```
 
-### Convert JSON to .pose format
+**Speed comparison** — benchmarked on 3 × 133-frame videos (640×480, ~5 s each) on a single Tesla T4:
+
+| Approach | Total time | Per video | Model loads |
+|---|---|---|---|
+| `run_alphapose.sh` (×3) | ~79 s | ~26 s each | 3 |
+| `run_alphapose_api.sh` (directory) | ~35 s | ~24 s (first), ~7 s (subsequent) | 1 |
+
+The API mode is **~2.3× faster** for batches. The speed advantage grows with the number of videos.
+
+### Step 2: Convert JSON to .pose format
 
 ```bash
 bash scripts/convert_to_pose.sh \
@@ -157,7 +165,7 @@ bash scripts/convert_to_pose.sh \
     --original-video data/input/test.mp4
 ```
 
-### Visualize
+### Step 3: Visualize
 
 ```bash
 bash scripts/visualize_pose.sh \
@@ -236,33 +244,6 @@ Options:
 | COCO WholeBody DCN Combined | 133 | — | — | `1aP0nYujw32H-VoJBVsXS-DsBBY-UwI8Y` |
 
 The default 136-kpt model (Multi-domain DCN Combined) is trained on both HALPE and COCO WholeBody datasets with deformable convolutions for strong whole-body accuracy.
-
----
-
-## Inference modes and speed
-
-There are two ways to run AlphaPose inference:
-
-### `run_alphapose.sh` — demo_inference.py mode
-
-Calls AlphaPose's built-in `demo_inference.py`. Supports one video per invocation; the model is loaded fresh each time. Can optionally save an AlphaPose-rendered annotated video (`--save-video`).
-
-### `run_alphapose_api.sh` — API mode (used by batch_to_pose.sh)
-
-Calls `scripts/alphapose_estimation.py`, which uses the AlphaPose Python API directly with a synchronous writer, bypassing `demo_inference.py`'s async DataWriter queue. The model is loaded once and all videos are processed in a single loop. Accepts a single video file or a directory of videos. Does not produce an annotated video — JSON output only.
-
-### Speed comparison
-
-Benchmarked on 3 × 133-frame videos (640×480, ~5 s each) on a single Tesla T4:
-
-| Approach | Total time | Per video | Model loads |
-|---|---|---|---|
-| `run_alphapose.sh` (×3) | ~79 s | ~26 s each | 3 |
-| `run_alphapose_api.sh` (directory) | ~35 s | ~24 s (first), ~7 s (subsequent) | 1 |
-
-The API mode is **~2.3× faster** for batch processing. The first video still pays the full startup cost (~17 s for model load); subsequent videos cost only the inference time (~7 s each). The speed advantage grows with the number of videos.
-
-`demo_inference.py` has no native batch/directory mode for videos, so model-load overhead cannot be avoided when using it for multiple videos.
 
 ---
 
