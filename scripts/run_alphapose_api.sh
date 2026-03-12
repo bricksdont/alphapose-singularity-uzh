@@ -14,7 +14,6 @@
 #   --track              Enable pose tracking (--pose_track)
 #   --flip               Enable horizontal flip augmentation
 #   --outdir <path>      Output directory (required)
-#   --cpu                Run on CPU instead of GPU (very slow, for testing only)
 
 set -euo pipefail
 
@@ -28,7 +27,6 @@ KEYPOINTS="136"
 TRACK=0
 FLIP=0
 OUTDIR=""
-CPU=0
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -53,12 +51,8 @@ while [[ $# -gt 0 ]]; do
             OUTDIR="$2"
             shift 2
             ;;
-        --cpu)
-            CPU=1
-            shift
-            ;;
         -h|--help)
-            echo "Usage: bash scripts/run_alphapose_api.sh --video <path|dir> --outdir <path> [--keypoints 136|133] [--track] [--flip] [--cpu]"
+            echo "Usage: bash scripts/run_alphapose_api.sh --video <path|dir> --outdir <path> [--keypoints 136|133] [--track] [--flip]"
             exit 0
             ;;
         *)
@@ -156,18 +150,10 @@ if [ "$FLIP" -eq 1 ]; then
 fi
 
 # Try apptainer first, fall back to singularity
-NV_FLAG="--nv"
-GPUS_ARG="--gpus 0"
-if [ "$CPU" -eq 1 ]; then
-    echo "WARNING: Running on CPU. This is very slow and intended for testing only."
-    NV_FLAG=""
-    GPUS_ARG="--gpus -1"
-fi
-
 if command -v apptainer &>/dev/null; then
-    SIF_CMD="apptainer exec $NV_FLAG"
+    SIF_CMD="apptainer exec --nv"
 elif command -v singularity &>/dev/null; then
-    SIF_CMD="singularity exec $NV_FLAG"
+    SIF_CMD="singularity exec --nv"
 else
     echo "ERROR: Neither apptainer nor singularity found in PATH."
     exit 1
@@ -188,7 +174,7 @@ $SIF_CMD \
         --video /input/${VIDEO_NAME} \
         --outdir /output \
         --format coco \
-        ${GPUS_ARG} \
+        --gpus 0 \
         ${EXTRA_ARGS}"
 
 echo ""
