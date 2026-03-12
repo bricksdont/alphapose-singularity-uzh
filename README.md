@@ -27,22 +27,19 @@ cd alphapose-singularity-uzh
 
 ### 1. Get the container
 
-Pull the pre-built image from GHCR (recommended).
-
-On the UZH cluster, load Apptainer first:
+Pull the pre-built image from GHCR (recommended) with Singularity or Apptainer:
 
 ```bash
-module load apptainer
-```
-
-Then pull with whichever runtime is available:
-
-```bash
-# Apptainer
-apptainer pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
-
 # Singularity
 singularity pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
+
+# Apptainer
+apptainer pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
+```
+
+On the UZH cluster, only Apptainer is currently available, and you may need to load it first:
+```bash
+module load apptainer
 ```
 
 > If the pull fails or you need to customise the container, see the [Building the Container from Source](#building-the-container-from-source) section.
