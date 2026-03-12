@@ -20,6 +20,8 @@ Singularity/Apptainer container pipeline for running [AlphaPose](https://github.
 
 ## Quick Start
 
+Note: instructions are for a local machine with a GPU, not an HPC cluster setup. See [SLURM Cluster Processing](#slurm-cluster-processing) for SLURM.
+
 ```bash
 git clone https://github.com/bricksdont/alphapose-singularity-uzh
 cd alphapose-singularity-uzh
@@ -37,11 +39,6 @@ singularity pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-u
 apptainer pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
 ```
 
-On the UZH cluster, only Apptainer is currently available, and you may need to load it first:
-```bash
-module load apptainer
-```
-
 > If the pull fails or you need to customise the container, see the [Building the Container from Source](#building-the-container-from-source) section.
 
 ### 2. Test GPU access
@@ -49,8 +46,6 @@ module load apptainer
 ```bash
 bash scripts/test_gpu.sh
 ```
-
-This is only for a local machine with a GPU, not the login node of a cluster. To test GPU there you may need to request an interactive GPU node first.
 
 ### 3. Set up venv
 
