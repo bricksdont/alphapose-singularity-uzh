@@ -1,12 +1,11 @@
 #!/usr/bin/bash -l
-# Single SLURM job: process a chunk directory of videos with AlphaPose.
+# Single SLURM job: process a chunk of videos end-to-end via batch_to_pose.sh.
 # Called by slurm_submit.sh — do not run directly.
 #
 # Arguments:
 #   $1  chunk directory (symlinks to video files)
-#   $2  output directory
+#   $2  output directory (.pose files written here)
 #   $3  keypoints (136 or 133, default: 136)
-#   $4  optional flags (e.g. "--track")
 
 #SBATCH --partition=lowprio
 #SBATCH --gpus=V100:1
@@ -21,7 +20,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CHUNK_DIR="${1:?chunk dir required}"
 OUTPUT_DIR="${2:?output dir required}"
 KEYPOINTS="${3:-136}"
-EXTRA_FLAGS="${4:-}"
 
 echo "=== SLURM AlphaPose job ==="
 echo "Host:      $(hostname)"
@@ -35,11 +33,10 @@ echo ""
 
 module load apptainer
 
-bash "$SCRIPT_DIR/run_alphapose_api.sh" \
-    --video "$CHUNK_DIR" \
-    --outdir "$OUTPUT_DIR" \
-    --keypoints "$KEYPOINTS" \
-    $EXTRA_FLAGS
+bash "$SCRIPT_DIR/batch_to_pose.sh" \
+    "$CHUNK_DIR" \
+    "$OUTPUT_DIR" \
+    --keypoints "$KEYPOINTS"
 
 # Clean up chunk dir (contains only symlinks)
 rm -rf "$CHUNK_DIR"

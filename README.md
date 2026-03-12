@@ -6,7 +6,7 @@ Singularity/Apptainer container pipeline for running [AlphaPose](https://github.
 
 - **136 keypoints** (HALPE_136, default) or **133 keypoints** (COCO WholeBody)
 - Whole-body pose: face, hands, body, feet
-- Output: JSON keypoints, annotated video, `.pose` format ([pose-format library](https://github.com/GerrySant/pose/tree/1ed292b03ff627fa9e2594b944c853ec7172aa74))
+- Output: `.pose` format ([pose-format library](https://github.com/GerrySant/pose/tree/1ed292b03ff627fa9e2594b944c853ec7172aa74))
 - SLURM support for batch processing on HPC clusters
 
 ## Requirements
@@ -34,7 +34,7 @@ Pull the pre-built image from GHCR (recommended):
 singularity pull alphapose.sif oras://ghcr.io/bricksdont/alphapose-singularity-uzh/alphapose:latest
 ```
 
-> If the pull fails or you need to customise the container, see the [Pushing the Container to GHCR](#pushing-the-container-to-ghcr) section for instructions on building from source.
+> If the pull fails or you need to customise the container, see the [Building the Container from Source](#building-the-container-from-source) section.
 
 ### 2. Test GPU access
 
@@ -48,7 +48,7 @@ bash scripts/test_gpu.sh
 bash scripts/setup_venv.sh
 ```
 
-Installs `gdown` (needed for model download) and the post-processing (Step 7) dependencies.
+Installs `gdown` (needed for model download) and the post-processing dependencies.
 
 ### 4. Download model weights
 
@@ -56,45 +56,99 @@ Installs `gdown` (needed for model download) and the post-processing (Step 7) de
 bash scripts/download_models.sh
 ```
 
-Downloads YOLO detector and pose models to `data/pretrained_models/`. Requires `gdown` from the venv.
+Downloads YOLO detector and pose models to `data/models/`. Requires `gdown` from the venv.
 
-### 5. Get a test video
-
-```bash
-bash scripts/download_test_video.sh
-```
-
-Downloads a short sample video to `data/input/test.mp4`.
-
-### 6. Run AlphaPose
-
-There are two scripts; both produce identical keypoint output (default scheme: 136 keypoints per frame, COCO-format JSON).
-
-**Option A — `run_alphapose.sh`** (single video only):
+### 5. Run on a folder of videos
 
 ```bash
-bash scripts/run_alphapose.sh --video data/input/test.mp4 --outdir data/output/keypoints
+bash scripts/batch_to_pose.sh data/input/ data/output/
 ```
 
-Optionally save AlphaPose's own skeleton-overlay video alongside the JSON:
+This runs AlphaPose on all videos in `data/input/` and writes one `.pose` file per video to `data/output/`. AlphaPose JSON keypoints are stored in a temporary directory and deleted after conversion — only the `.pose` files are kept.
+
+To test with a sample video first:
 
 ```bash
-bash scripts/run_alphapose.sh --video data/input/test.mp4 --outdir data/output/keypoints --save-video
+bash scripts/download_test_video.sh   # downloads data/input/test.mp4
+bash scripts/batch_to_pose.sh data/input/ data/output/
 ```
 
-**Option B — `run_alphapose_api.sh`** (single video or directory):
+---
+
+## SLURM Cluster Processing
+
+For large-scale processing on the UZH ScienceCluster, split videos across multiple GPU jobs:
 
 ```bash
-# single video
-bash scripts/run_alphapose_api.sh --video data/input/test.mp4 --outdir data/output/keypoints_api
-
-# directory of videos — loads the model once and processes all videos in a loop
-bash scripts/run_alphapose_api.sh --video data/input/ --outdir data/output/keypoints_api
+bash scripts/slurm_submit.sh <input_dir> <output_dir> [--chunks N]
 ```
 
-Processing a directory is significantly faster than running Option A once per video; see the [Inference modes and speed](#inference-modes-and-speed) section for benchmarks.
+This distributes videos across N SLURM jobs (default: 1). Each job runs `batch_to_pose.sh` on its chunk — AlphaPose loads the model once per job and processes all assigned videos, then converts them to `.pose` files.
 
-### 7. Convert to .pose format
+**Prerequisites:** the container image (`alphapose.sif`), model weights (`data/models/`), and Python virtual environment (`venv/`) must already be set up. The script must be run on a SLURM cluster with `sbatch` available.
+
+**Example:**
+
+```bash
+# Submit a single job covering all videos (default):
+bash scripts/slurm_submit.sh /path/to/videos /path/to/output
+
+# Or split across multiple parallel jobs:
+bash scripts/slurm_submit.sh /path/to/videos /path/to/output --chunks 4
+
+# Monitor jobs:
+squeue -u $USER
+
+# View logs:
+tail -f /path/to/output/.slurm_logs/job_*.out
+```
+
+**Building the container on the cluster:** Login nodes may not have enough memory to build the SIF image. Submit it as a SLURM job instead:
+
+```bash
+sbatch scripts/slurm_build_container.sh
+```
+
+---
+
+## Step-by-step (advanced)
+
+This section describes the individual pipeline steps for users who want more control —
+for debugging, producing annotated videos, or running the steps separately.
+
+### Run AlphaPose to get JSON keypoints
+
+There are two scripts; both produce identical keypoint output (136 keypoints per frame, COCO-format JSON).
+
+**`run_alphapose.sh`** — single video, can save an annotated overlay video:
+
+```bash
+bash scripts/run_alphapose.sh \
+    --video data/input/test.mp4 \
+    --outdir data/output/keypoints
+
+# Also save AlphaPose's own skeleton-overlay video:
+bash scripts/run_alphapose.sh \
+    --video data/input/test.mp4 \
+    --outdir data/output/keypoints \
+    --save-video
+```
+
+**`run_alphapose_api.sh`** — single video or directory; loads the model once for all videos (faster for batches):
+
+```bash
+# Single video:
+bash scripts/run_alphapose_api.sh \
+    --video data/input/test.mp4 \
+    --outdir data/output/keypoints_api
+
+# Directory of videos:
+bash scripts/run_alphapose_api.sh \
+    --video data/input/ \
+    --outdir data/output/keypoints_api
+```
+
+### Convert JSON to .pose format
 
 ```bash
 bash scripts/convert_to_pose.sh \
@@ -103,7 +157,7 @@ bash scripts/convert_to_pose.sh \
     --original-video data/input/test.mp4
 ```
 
-### 8. Visualize
+### Visualize
 
 ```bash
 bash scripts/visualize_pose.sh \
@@ -116,12 +170,23 @@ bash scripts/visualize_pose.sh \
 
 ## Script Reference
 
+### `scripts/batch_to_pose.sh`
+
+Processes a directory of videos end-to-end: runs AlphaPose (API mode, model loaded once), then converts each result to `.pose` format. JSON keypoints are written to a temporary directory and deleted after conversion.
+
+```
+Usage: bash scripts/batch_to_pose.sh <input_dir> <output_dir> [options]
+
+Options:
+  --keypoints 136|133  Number of keypoints (default: 136)
+```
+
 ### `scripts/run_alphapose.sh`
 
 Single video only. Can optionally save AlphaPose's own skeleton-overlay video.
 
 ```
-Usage: bash scripts/run_alphapose.sh --video <path> [options]
+Usage: bash scripts/run_alphapose.sh --video <path> --outdir <path> [options]
 
 Options:
   --video <path>       Input video (required)
@@ -147,9 +212,9 @@ Options:
   --outdir <path>      Output directory (required)
 ```
 
-### `scripts/slurm_submit.sh`
+### `scripts/slurm_submit.sh` / `scripts/slurm_job.sh`
 
-Submit parallel SLURM jobs for large-scale batch processing:
+Submit parallel SLURM jobs for large-scale batch processing. Each job runs `batch_to_pose.sh` on its assigned chunk of videos.
 
 ```
 Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [options]
@@ -158,33 +223,6 @@ Options:
   --chunks N           Number of parallel jobs (default: 1)
   --keypoints 136|133  Keypoint format (default: 136)
   --time <HH:MM:SS>    Time limit per job (default: 24:00:00)
-```
-
----
-
-## SLURM Cluster Processing
-
-For large-scale processing on the UZH ScienceCluster, split videos across multiple GPU jobs:
-
-```bash
-bash scripts/slurm_submit.sh <input_dir> <output_dir> [--chunks N]
-```
-
-This distributes videos across N SLURM jobs (default: 4). Each job processes its chunk using `run_alphapose_api.sh`, which loads the model **once** per job and processes all assigned videos in a loop — significantly faster than reloading the model per video.
-
-**Prerequisites:** the container image (`alphapose.sif`), model weights (`data/models/`), and Python virtual environment (`venv/`) must already be set up. The script must be run on a SLURM cluster with `sbatch` available.
-
-**Example:**
-
-```bash
-# From the repo directory on the cluster:
-bash scripts/slurm_submit.sh /path/to/videos /path/to/output --chunks 8
-
-# Monitor jobs:
-squeue -u $USER
-
-# View logs:
-tail -f /path/to/output/.slurm_logs/job_*.out
 ```
 
 ---
@@ -201,6 +239,33 @@ The default 136-kpt model (Multi-domain DCN Combined) is trained on both HALPE a
 
 ---
 
+## Inference modes and speed
+
+There are two ways to run AlphaPose inference:
+
+### `run_alphapose.sh` — demo_inference.py mode
+
+Calls AlphaPose's built-in `demo_inference.py`. Supports one video per invocation; the model is loaded fresh each time. Can optionally save an AlphaPose-rendered annotated video (`--save-video`).
+
+### `run_alphapose_api.sh` — API mode (used by batch_to_pose.sh)
+
+Calls `scripts/alphapose_estimation.py`, which uses the AlphaPose Python API directly with a synchronous writer, bypassing `demo_inference.py`'s async DataWriter queue. The model is loaded once and all videos are processed in a single loop. Accepts a single video file or a directory of videos. Does not produce an annotated video — JSON output only.
+
+### Speed comparison
+
+Benchmarked on 3 × 133-frame videos (640×480, ~5 s each) on a single Tesla T4:
+
+| Approach | Total time | Per video | Model loads |
+|---|---|---|---|
+| `run_alphapose.sh` (×3) | ~79 s | ~26 s each | 3 |
+| `run_alphapose_api.sh` (directory) | ~35 s | ~24 s (first), ~7 s (subsequent) | 1 |
+
+The API mode is **~2.3× faster** for batch processing. The first video still pays the full startup cost (~17 s for model load); subsequent videos cost only the inference time (~7 s each). The speed advantage grows with the number of videos.
+
+`demo_inference.py` has no native batch/directory mode for videos, so model-load overhead cannot be avoided when using it for multiple videos.
+
+---
+
 ## Building the Container from Source
 
 If the GHCR pull fails or you need to customise the container, build from source:
@@ -213,7 +278,7 @@ bash scripts/build_container.sh
 
 On a SLURM cluster, submit as a job instead:
 ```bash
-bash scripts/slurm_build_container.sh
+sbatch scripts/slurm_build_container.sh
 ```
 
 > **Tip:** If the build fails repeatedly, temporary files from previous attempts may have exhausted disk space in `/tmp`. Check with `du -sh /tmp/build-temp-*` and remove any leftover directories before retrying.
@@ -249,41 +314,6 @@ By default GHCR packages are private. To allow public access, go to:
 
 > GitHub → Your profile → Packages → `alphapose` → Package Settings → Change visibility → Public
 
-### Building the container on the cluster
-
-Login nodes may not have enough memory to build the SIF image. Submit it as a SLURM job instead:
-
-```bash
-sbatch scripts/slurm_build_container.sh
-```
-
----
-
-## Inference modes and speed
-
-There are two ways to run AlphaPose inference:
-
-### `run_alphapose.sh` — demo_inference.py mode
-
-Calls AlphaPose's built-in `demo_inference.py`. Supports one video per invocation; the model is loaded fresh each time. Can optionally save an AlphaPose-rendered annotated video (`--save-video`).
-
-### `run_alphapose_api.sh` — API mode (recommended for batches)
-
-Calls `scripts/alphapose_estimation.py`, which uses the AlphaPose Python API directly with a synchronous writer, bypassing `demo_inference.py`'s async DataWriter queue. The model is loaded once and all videos are processed in a single loop. Accepts a single video file or a directory of videos. Does not produce an annotated video — JSON output only.
-
-### Speed comparison
-
-Benchmarked on 3 × 133-frame videos (640×480, ~5 s each) on a single Tesla T4:
-
-| Approach | Total time | Per video | Model loads |
-|---|---|---|---|
-| `run_alphapose.sh` (×3) | ~79 s | ~26 s each | 3 |
-| `run_alphapose_api.sh` (directory) | ~35 s | ~24 s (first), ~7 s (subsequent) | 1 |
-
-The API mode is **~2.3× faster** for batch processing. The first video still pays the full startup cost (~17 s for model load); subsequent videos cost only the inference time (~7 s each). The speed advantage grows with the number of videos.
-
-`demo_inference.py` has no native batch/directory mode for videos, so model-load overhead cannot be avoided when using it for multiple videos.
-
 ---
 
 ## Directory Structure
@@ -301,6 +331,7 @@ alphapose-singularity-uzh/
 │   ├── download_models.sh
 │   ├── test_gpu.sh
 │   ├── download_test_video.sh
+│   ├── batch_to_pose.sh
 │   ├── run_alphapose.sh
 │   ├── run_alphapose_api.sh
 │   ├── alphapose_estimation.py
@@ -314,7 +345,7 @@ alphapose-singularity-uzh/
 │   └── slurm_build_container.sh
 └── data/                  # gitignored
     ├── input/             # input videos
-    ├── output/            # keypoints JSON, .pose files, videos
+    ├── output/            # .pose files, videos
     └── models/            # downloaded weights
         ├── yolov3-spp.weights
         └── pretrained_models/
@@ -337,7 +368,7 @@ alphapose-singularity-uzh/
 ## Acknowledgements
 
 ```bibtex
-@misc{muller-et-al-2026alphapose-singularity-uzh, 
+@misc{muller-et-al-2026alphapose-singularity-uzh,
     title={Singularity/Apptainer container pipeline for running AlphaPose whole-body pose estimation},
     author={M{\"u}ller, Mathias and Sant, Gerard},
     howpublished={\url{https://github.com/bricksdont/alphapose-singularity-uzh}},
