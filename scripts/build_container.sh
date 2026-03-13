@@ -48,7 +48,10 @@ fi
 
 # Try apptainer first, fall back to singularity
 if command -v apptainer &>/dev/null; then
-    BUILD_CMD="apptainer build"
+    # --ignore-fakeroot-command: skip the bundled faked binary injected into the
+    # container, which requires a newer glibc than the Ubuntu 20.04 base image
+    # provides (GLIBC_2.33/2.34 needed, 2.31 available).
+    BUILD_CMD="apptainer build --ignore-fakeroot-command"
 elif command -v singularity &>/dev/null; then
     BUILD_CMD="singularity build --fakeroot"
 else
