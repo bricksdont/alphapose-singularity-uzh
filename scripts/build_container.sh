@@ -61,7 +61,9 @@ echo "Output: $SIF"
 echo ""
 
 cd "$REPO_DIR"
-$BUILD_CMD "$SIF" "$DEF"
+# Clear automatic bind paths from site config (e.g. /apps on HPC clusters).
+# These don't exist inside the container being built and cause a fatal mount error.
+APPTAINER_BIND="" SINGULARITY_BIND="" $BUILD_CMD "$SIF" "$DEF"
 
 echo ""
 echo "=== Build complete: $SIF ==="
