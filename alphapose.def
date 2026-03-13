@@ -10,8 +10,14 @@ From: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
     # containers. The destination directories must exist in the container before
     # the build can proceed, otherwise apptainer fails with:
     #   "destination /apps doesn't exist in container"
-    mkdir -p "$APPTAINER_ROOTFS/apps"
-    mkdir -p "$APPTAINER_ROOTFS/shares"
+    mkdir -p \
+        "$APPTAINER_ROOTFS/apps" \
+        "$APPTAINER_ROOTFS/shares" \
+        "$APPTAINER_ROOTFS/scratch" \
+        "$APPTAINER_ROOTFS/work" \
+        "$APPTAINER_ROOTFS/data" \
+        "$APPTAINER_ROOTFS/project" \
+        "$APPTAINER_ROOTFS/cluster"
 
 %post
     # Suppress interactive prompts during apt installs
