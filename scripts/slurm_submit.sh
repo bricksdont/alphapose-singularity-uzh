@@ -12,8 +12,8 @@
 #   --chunks N           Number of parallel jobs (default: 1)
 #   --keypoints 136|133  Keypoints (default: 136)
 #   --time <HH:MM:SS>    Time limit per job (default: 24:00:00)
-#   --lowprio            Use low-priority partition (--partition=lowprio --gpus=V100:1)
-#                        Default (no flag): --gpus=1
+#   --lowprio            Use low-priority partition (adds --partition=lowprio)
+#                        Default (no flag): --gpus=1 (no partition specified)
 
 set -euo pipefail
 
@@ -81,7 +81,7 @@ if [ "$NUM_CHUNKS" -gt "$TOTAL" ]; then
 fi
 
 if [ "$LOWPRIO" -eq 1 ]; then
-    GPU_ARGS="--partition=lowprio --gpus=V100:1"
+    GPU_ARGS="--partition=lowprio --gpus=1"
 else
     GPU_ARGS="--gpus=1"
 fi
