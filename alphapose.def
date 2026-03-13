@@ -59,7 +59,7 @@ From: nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
 
     # Install Python dependencies
     pip install --no-cache-dir \
-        setuptools \
+        "setuptools<70" \
         cython \
         "numpy==1.26.4" \
         "opencv-python==4.11.0.86" \
