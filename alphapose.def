@@ -5,6 +5,13 @@ From: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
     Author Mathias Müller
     Description AlphaPose pose estimation container
 
+%setup
+    # Some HPC clusters (e.g. UZH ScienceCluster) configure automatic bind mounts
+    # in /etc/apptainer/apptainer.conf (e.g. /apps for module files). These must
+    # exist as directories inside the container before %post runs, otherwise the
+    # build fails with "destination /apps doesn't exist in container".
+    mkdir -p "$APPTAINER_ROOTFS/apps"
+
 %post
     # Suppress interactive prompts during apt installs
     export DEBIAN_FRONTEND=noninteractive
