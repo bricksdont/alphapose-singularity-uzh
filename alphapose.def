@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
+From: nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
 
 %labels
     Author Mathias Müller
@@ -32,6 +32,21 @@ From: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
         libglib2.0-0 \
         && rm -rf /var/lib/apt/lists/*
 
+    # Install Miniconda with Python 3.10 at /opt/conda
+    # (run scripts expect Python at /opt/conda/lib/python3.10/)
+    wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+        -O /tmp/miniconda.sh
+    bash /tmp/miniconda.sh -b -p /opt/conda
+    rm /tmp/miniconda.sh
+    export PATH=/opt/conda/bin:$PATH
+    conda install -y python=3.10
+    conda clean -afy
+
+    # Install PyTorch 2.1.0 with CUDA 12.1
+    pip install --no-cache-dir \
+        torch==2.1.0 torchvision torchaudio \
+        --index-url https://download.pytorch.org/whl/cu121
+
     # Install Python dependencies
     pip install --no-cache-dir \
         cython \
@@ -58,6 +73,7 @@ From: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
 
     # Explicitly set CUDA arch list — required when building without a GPU
     # (torch cannot auto-detect architectures at build time in a container)
+    # Includes sm_90 for H100/H200 (Hopper architecture)
     export TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0 7.5 8.0 8.6 9.0"
 
     # Pre-install matplotlib and contourpy via pip to avoid easy_install
@@ -73,7 +89,7 @@ From: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
     mkdir -p /opt/alphapose/pretrained_models
 
 %environment
-    export PATH=/usr/local/cuda/bin:$PATH
+    export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
     export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
     export PYTHONPATH=/opt/alphapose
 
