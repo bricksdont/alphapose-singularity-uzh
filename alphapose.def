@@ -6,11 +6,21 @@ From: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
     Description AlphaPose pose estimation container
 
 %setup
-    # Some HPC clusters (e.g. UZH ScienceCluster) configure automatic bind mounts
-    # in /etc/apptainer/apptainer.conf (e.g. /apps for module files). These must
-    # exist as directories inside the container before %post runs, otherwise the
-    # build fails with "destination /apps doesn't exist in container".
-    mkdir -p "$APPTAINER_ROOTFS/apps"
+    # HPC clusters configure automatic bind mounts in apptainer.conf (e.g. /apps,
+    # /shares). The destination directories must exist in the container before the
+    # build can proceed, otherwise apptainer fails with:
+    #   "destination /apps doesn't exist in container"
+    # Read all bind paths from the host config and pre-create them in the sandbox.
+    for conf in /etc/apptainer/apptainer.conf /etc/singularity/singularity.conf; do
+        [ -f "$conf" ] || continue
+        grep -E "^bind path" "$conf" | sed 's/.*=\s*//' | tr ',' '\n' | \
+        while IFS= read -r entry; do
+            entry="$(printf '%s' "$entry" | tr -d ' \t')"
+            [ -z "$entry" ] && continue
+            dst="${entry##*:}"  # handles both "src:dst" and plain "/path"
+            [ -n "$dst" ] && mkdir -p "$APPTAINER_ROOTFS$dst"
+        done
+    done
 
 %post
     # Suppress interactive prompts during apt installs
