@@ -6,18 +6,21 @@ From: nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
     Description AlphaPose pose estimation container
 
 %setup
-    # The UZH ScienceCluster automatically bind-mounts /apps and /shares into
-    # containers. The destination directories must exist in the container before
-    # the build can proceed, otherwise apptainer fails with:
+    # The UZH ScienceCluster automatically bind-mounts /apps, /shares, /scratch
+    # etc. into containers. The destination directories must exist in the container
+    # before the build can proceed, otherwise apptainer fails with:
     #   "destination /apps doesn't exist in container"
+    # $APPTAINER_ROOTFS (Apptainer) and $SINGULARITY_ROOTFS (SingularityCE) both
+    # point to the container sandbox during %setup; use whichever is set.
+    ROOTFS="${APPTAINER_ROOTFS:-${SINGULARITY_ROOTFS:-}}"
     mkdir -p \
-        "$APPTAINER_ROOTFS/apps" \
-        "$APPTAINER_ROOTFS/shares" \
-        "$APPTAINER_ROOTFS/scratch" \
-        "$APPTAINER_ROOTFS/work" \
-        "$APPTAINER_ROOTFS/data" \
-        "$APPTAINER_ROOTFS/project" \
-        "$APPTAINER_ROOTFS/cluster"
+        "$ROOTFS/apps" \
+        "$ROOTFS/shares" \
+        "$ROOTFS/scratch" \
+        "$ROOTFS/work" \
+        "$ROOTFS/data" \
+        "$ROOTFS/project" \
+        "$ROOTFS/cluster"
 
 %post
     # Suppress interactive prompts during apt installs
