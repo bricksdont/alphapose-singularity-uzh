@@ -48,7 +48,11 @@ fi
 
 # Try apptainer first, fall back to singularity
 if command -v apptainer &>/dev/null; then
-    BUILD_CMD="apptainer build"
+    # --ignore-fakeroot-command: the cluster's bundled fakeroot binaries
+    # (faked, libfakeroot.so) require a newer glibc than the container base
+    # image provides. Skipping them avoids the incompatibility; apt-get is
+    # fixed separately via APT::Sandbox::User in %post.
+    BUILD_CMD="apptainer build --ignore-fakeroot-command"
 elif command -v singularity &>/dev/null; then
     BUILD_CMD="singularity build --fakeroot"
 else

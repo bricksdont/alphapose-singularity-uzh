@@ -26,6 +26,12 @@ From: nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
     # Suppress interactive prompts during apt installs
     export DEBIAN_FRONTEND=noninteractive
 
+    # When building with --ignore-fakeroot-command (required on clusters where the
+    # bundled fakeroot binaries require a newer glibc than the base image has),
+    # apt-get tries to drop privileges to the _apt user via setgroups/seteuid,
+    # which is not permitted in a user namespace. Tell apt to stay as root.
+    echo 'APT::Sandbox::User "root";' > /etc/apt/apt.conf.d/00no-sandbox
+
     # Install system dependencies
     apt-get update && apt-get install -y \
         git \
