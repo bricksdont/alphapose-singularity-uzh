@@ -82,6 +82,15 @@ bash scripts/download_test_video.sh   # downloads data/input/test.mp4
 bash scripts/batch_to_pose.sh data/input/ data/output/
 ```
 
+### 6. Visualize the output
+
+```bash
+bash scripts/visualize_pose.sh \
+    -i data/output/test.pose \
+    -o data/output/test_viz.mp4 \
+    --video data/input/test.mp4
+```
+
 ---
 
 ## SLURM Cluster Processing
