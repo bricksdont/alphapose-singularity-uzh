@@ -310,6 +310,8 @@ By default GHCR packages are private. To allow public access, go to:
 
 > GitHub → Your profile → Packages → `alphapose` → Package Settings → Change visibility → Public
 
+This only needs to be done the first time a container with a particular tag is pushed, not for updates with the same tag.
+
 ---
 
 ## Directory Structure
