@@ -39,6 +39,11 @@ pip install --upgrade pip
 
 echo ""
 echo "Installing requirements from requirements.txt..."
+# The pose-format repo has a submodule with an SSH URL (git@github.com:...).
+# Override SSH GitHub URLs to HTTPS so users without SSH keys can install.
+GIT_CONFIG_COUNT=1 \
+GIT_CONFIG_KEY_0="url.https://github.com/.insteadOf" \
+GIT_CONFIG_VALUE_0="git@github.com:" \
 pip install -r "$REPO_DIR/requirements.txt"
 
 echo ""
