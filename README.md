@@ -20,7 +20,8 @@ Singularity/Apptainer container pipeline for running [AlphaPose](https://github.
 
 ## Quick Start
 
-Note: instructions are for a local machine with a GPU, not an HPC cluster setup. See [SLURM Cluster Processing](#slurm-cluster-processing) for SLURM.
+> [!WARNING]  
+> Instructions are for a local machine with a GPU, not an HPC cluster setup. See [SLURM Cluster Processing](#slurm-cluster-processing) for SLURM.
 
 ```bash
 git clone https://github.com/bricksdont/alphapose-singularity-uzh
@@ -64,6 +65,9 @@ bash scripts/download_models.sh
 Downloads YOLO detector and pose models to `data/models/`. Requires `gdown` from the venv.
 
 ### 5. Run on a folder of videos
+
+> [!WARNING]  
+> Do not run on the login node of a SLURM cluster. See [SLURM Cluster Processing](#slurm-cluster-processing) for SLURM.
 
 ```bash
 bash scripts/batch_to_pose.sh data/input/ data/output/
