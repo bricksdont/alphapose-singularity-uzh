@@ -96,6 +96,58 @@ Two issues required workarounds without rebuilding the container:
   followed by `convert_to_pose.sh` for each video. JSON written to a temp dir and cleaned up;
   only `.pose` files are kept.
 
+## Building the container on the UZH ScienceCluster
+
+Building with `sbatch scripts/slurm_build_container.sh --force-rebuild` required several fixes
+that are now baked into `alphapose.def` and `build_container.sh`:
+
+1. **Cluster auto-bind-mounts** (`/apps`, `/shares`, `/scratch`, etc.): the cluster injects these
+   into every container. During a build the destinations must exist in the sandbox before `%post`
+   runs, otherwise the build fails with "destination /apps doesn't exist in container". Fixed via
+   a `%setup` section that pre-creates them using `$APPTAINER_ROOTFS` / `$SINGULARITY_ROOTFS`.
+
+2. **Bundled fakeroot glibc incompatibility**: the cluster's apptainer ships `faked` and
+   `libfakeroot.so` compiled against GLIBC_2.38. The container base image (Ubuntu 22.04) only
+   has GLIBC_2.35. Fixed with `--ignore-fakeroot-command` in `apptainer build`.
+
+3. **apt-get privilege drop fails without fakeroot**: with `--ignore-fakeroot-command`, apt tries
+   to drop to the `_apt` user via setgroups, which is blocked in a user namespace. Fixed by
+   writing `APT::Sandbox::User "root";` to `/etc/apt/apt.conf.d/00no-sandbox` at the start of
+   `%post`.
+
+4. **Base image**: switched from `pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel` (Ubuntu 20.04) to
+   `nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04` + Miniforge, because the pytorch image's glibc
+   was too old for the cluster's fakeroot. PyTorch 2.1.0 installed via pip (cu121 wheel).
+
+5. **Miniforge instead of Miniconda**: Miniconda's default channels (pkgs/main, pkgs/r) now
+   require interactive TOS acceptance, which breaks non-interactive builds.
+
+6. **`setuptools<70`**: newer setuptools removes `pkg_resources`, which is required by
+   `torch.utils.cpp_extension` during the AlphaPose build.
+
+7. **`cython_bbox` pre-installed with `--no-build-isolation`**: pip's isolated build env lacks
+   Cython, so cython_bbox must be pre-installed before `setup.py` runs.
+
+## H200 GPU (sm_90) compatibility
+
+The original `TORCH_CUDA_ARCH_LIST` (`6.0 6.1 7.0 7.5 8.0 8.6`) excluded the H200/H100 (Hopper,
+sm_90). At runtime on an H200, DCN kernels fail silently:
+`error in deformable_im2col: no kernel image is available for execution on the device`
+AlphaPose appears to run but produces empty (2-byte) JSON files, and conversion fails with
+`ValueError: need at least one array to stack`. Fixed by adding `9.0` to the arch list.
+
+## SLURM: --lowprio option
+
+`slurm_submit.sh --lowprio` adds `--partition=lowprio` to the sbatch call. Without `--lowprio`,
+no partition is specified (scheduler picks any available GPU). In both cases `--gpus=1` is used.
+
+## setup_venv.sh: SSH submodule workaround
+
+The `pose-format` repo has a submodule with an SSH URL (`git@github.com:...`). Users without
+GitHub SSH keys configured will hit "Permission denied (publickey)" during `pip install`.
+Fixed in `setup_venv.sh` by setting `GIT_CONFIG_COUNT` env vars to redirect SSH GitHub URLs
+to HTTPS for that one pip call (no global git config modified).
+
 ## CPU mode: not supported
 
 AlphaPose's Deformable Convolution (DCN) layers are CUDA-only. Passing `--gpus -1` immediately
