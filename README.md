@@ -20,13 +20,13 @@ Singularity/Apptainer container pipeline for running [AlphaPose](https://github.
 
 ## Quick Start
 
-> [!WARNING]  
-> Instructions are for a local machine with a GPU, not an HPC cluster setup. See [SLURM Cluster Processing](#slurm-cluster-processing) for SLURM.
-
 ```bash
 git clone https://github.com/bricksdont/alphapose-singularity-uzh
 cd alphapose-singularity-uzh
 ```
+
+> [!WARNING]  
+> Instructions are for a local machine with a GPU, not an HPC cluster setup. See [SLURM Cluster Processing](#slurm-cluster-processing) for SLURM.
 
 ### 1. Get the container
 
