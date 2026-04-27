@@ -14,6 +14,7 @@
 #   --time <HH:MM:SS>    Time limit per job (default: 24:00:00)
 #   --lowprio            Use low-priority partition (adds --partition=lowprio)
 #                        Default (no flag): --gpus=1 (no partition specified)
+#   --resume             Skip videos that already have a <stem>.pose file in output_dir
 
 set -euo pipefail
 
@@ -24,6 +25,7 @@ NUM_CHUNKS=1
 KEYPOINTS="136"
 TIME_LIMIT="24:00:00"
 LOWPRIO=0
+RESUME=0
 
 # Parse args
 POSITIONAL=()
@@ -33,8 +35,9 @@ while [[ $# -gt 0 ]]; do
         --keypoints)  KEYPOINTS="$2"; shift 2 ;;
         --time)       TIME_LIMIT="$2"; shift 2 ;;
         --lowprio)    LOWPRIO=1; shift ;;
+        --resume)     RESUME=1; shift ;;
         -h|--help)
-            echo "Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [--chunks N] [--keypoints 136|133] [--time <HH:MM:SS>] [--lowprio]"
+            echo "Usage: bash scripts/slurm_submit.sh <input_dir> <output_dir> [--chunks N] [--keypoints 136|133] [--time <HH:MM:SS>] [--lowprio] [--resume]"
             exit 0
             ;;
         *)
@@ -65,15 +68,40 @@ fi
 
 # Collect video files
 shopt -s nullglob
-VIDEO_FILES=("$INPUT_DIR"/*.mp4 "$INPUT_DIR"/*.avi "$INPUT_DIR"/*.mov "$INPUT_DIR"/*.mkv)
+ALL_VIDEO_FILES=("$INPUT_DIR"/*.mp4 "$INPUT_DIR"/*.avi "$INPUT_DIR"/*.mov "$INPUT_DIR"/*.mkv)
 shopt -u nullglob
 
-if [ ${#VIDEO_FILES[@]} -eq 0 ]; then
+if [ ${#ALL_VIDEO_FILES[@]} -eq 0 ]; then
     echo "ERROR: No video files (*.mp4, *.avi, *.mov, *.mkv) found in $INPUT_DIR"
     exit 1
 fi
 
+# --resume: filter out videos that already have a <stem>.pose in output_dir
+VIDEO_FILES=()
+SKIPPED=0
+if [ "$RESUME" -eq 1 ]; then
+    echo "=== Resume mode: checking for existing .pose outputs ==="
+    for VIDEO_FILE in "${ALL_VIDEO_FILES[@]}"; do
+        STEM="$(basename "${VIDEO_FILE%.*}")"
+        if [ -f "$OUTPUT_DIR/$STEM.pose" ]; then
+            SKIPPED=$((SKIPPED + 1))
+        else
+            VIDEO_FILES+=("$VIDEO_FILE")
+        fi
+    done
+    echo "Already done: $SKIPPED / ${#ALL_VIDEO_FILES[@]}"
+    echo "Remaining:    ${#VIDEO_FILES[@]}"
+    echo ""
+else
+    VIDEO_FILES=("${ALL_VIDEO_FILES[@]}")
+fi
+
 TOTAL=${#VIDEO_FILES[@]}
+
+if [ "$TOTAL" -eq 0 ]; then
+    echo "Nothing to do — all videos already have .pose outputs. Exiting."
+    exit 0
+fi
 
 # Cap chunks to number of videos
 if [ "$NUM_CHUNKS" -gt "$TOTAL" ]; then
@@ -89,7 +117,7 @@ fi
 echo "=== AlphaPose SLURM batch submission ==="
 echo "Input:     $INPUT_DIR"
 echo "Output:    $OUTPUT_DIR"
-echo "Videos:    $TOTAL"
+echo "Videos:    $TOTAL (to process)"
 echo "Chunks:    $NUM_CHUNKS"
 echo "Time:      $TIME_LIMIT"
 echo "GPU args:  $GPU_ARGS"
